@@ -5,7 +5,12 @@ import { addDays, formatDateLong, formatDateShort, formatDuration } from '../lib
 import { dailyTotals, sumMacros } from '../lib/nutrition';
 import { fmt, fmtSigned, pctSigned } from '../lib/stats';
 import { formatMetric, sessionsByExercise, TREND_LABELS } from '../lib/training';
+import { DEFAULT_SCHEDULE, dayNeeds } from '../lib/dailyNeeds';
+import { formatClock, formatDistance, formatPace, SPORT_DEFS } from '../lib/sports';
 import type {
+  Activity,
+  TrainingPlan,
+  WeekSchedule,
   Exercise,
   Food,
   Goals,
@@ -17,7 +22,7 @@ import type {
   WeightEntry,
   WorkoutSet,
 } from '../types';
-import { DEFAULT_GOALS, GOAL_LABELS, MEAL_LABELS } from '../types';
+import { DAY_KIND_LABELS, DEFAULT_GOALS, GOAL_LABELS, INTENSITY_LABELS, MEAL_LABELS, WEEKDAY_LABELS } from '../types';
 
 export interface AppData {
   goals: Goals;
@@ -28,10 +33,13 @@ export interface AppData {
   weights: WeightEntry[];
   exercises: Exercise[];
   foods: Food[];
+  activities: Activity[];
+  plan: TrainingPlan | null;
+  schedule: WeekSchedule | null;
 }
 
 export async function loadAppData(): Promise<AppData> {
-  const [goals, profile, sets, meals, sleep, weights, exercises, foods] = await Promise.all([
+  const [goals, profile, sets, meals, sleep, weights, exercises, foods, activities, plan, schedule] = await Promise.all([
     getKV<Goals>('goals', DEFAULT_GOALS),
     getKV<Profile | null>('profile', null),
     db.sets.toArray(),
@@ -40,8 +48,11 @@ export async function loadAppData(): Promise<AppData> {
     db.weights.toArray(),
     db.exercises.toArray(),
     db.foods.toArray(),
+    db.activities.toArray(),
+    getKV<TrainingPlan | null>('trainingPlan', null),
+    getKV<WeekSchedule | null>('schedule', null),
   ]);
-  return { goals, profile, sets, meals, sleep, weights, exercises, foods };
+  return { goals, profile, sets, meals, sleep, weights, exercises, foods, activities, plan, schedule };
 }
 
 export function runAnalysis(data: AppData, today: ISODate): AnalysisResult {
@@ -203,6 +214,35 @@ export function describeFoodLibrary(foods: Food[], limit = 80): string {
   return lines.join('\n');
 }
 
+export function describeActivities(data: AppData, today: ISODate, days = 28): string {
+  const list = data.activities.filter((a) => a.date > addDays(today, -days)).sort((a, b) => a.startTime - b.startTime);
+  if (!list.length) return 'Keine aufgezeichneten Aktivitäten.';
+  return list
+    .map((a) => {
+      const pace = formatPace(a.sport, a.distanceM, a.durationSec);
+      return `${formatDateShort(a.date)}: ${SPORT_DEFS[a.sport].label} „${a.title}“ – ${a.distanceM ? `${formatDistance(a.distanceM)}, ` : ''}${formatClock(a.durationSec)}${pace ? `, ${pace}` : ''}${a.elevationGainM ? `, ${fmt(a.elevationGainM)} Hm` : ''}${a.avgHr ? `, Ø ${a.avgHr} bpm` : ''}${a.hyrox?.race ? ', Hyrox-Wettkampf' : ''}${a.strength?.length ? `, ${a.strength.map((s) => s.exercise).join(', ')}` : ''} (${a.points} Punkte)`;
+    })
+    .join('\n');
+}
+
+export function describePlanAndDay(data: AppData, today: ISODate): string {
+  const lines: string[] = [];
+  if (data.plan?.sessions.length) {
+    lines.push(`Trainingsplan „${data.plan.name}“:`);
+    for (const s of [...data.plan.sessions].sort((a, b) => a.weekday - b.weekday))
+      lines.push(`- ${WEEKDAY_LABELS[s.weekday]}${s.time ? ` ${s.time}` : ''}: ${SPORT_DEFS[s.sport].label} „${s.title}“, ${s.durationMin} min, ${INTENSITY_LABELS[s.intensity]}${s.distanceKm ? `, ${fmt(s.distanceKm, 1)} km` : ''}`);
+  } else lines.push('Kein Trainingsplan hinterlegt.');
+  if (data.schedule)
+    lines.push(
+      `Alltag: ${data.schedule.map((d, i) => `${WEEKDAY_LABELS[i].slice(0, 2)} ${DAY_KIND_LABELS[d.kind].split(' (')[0]}${d.kind !== 'frei' && d.start ? ` ${d.start}–${d.end}` : ''}`).join('; ')}`,
+    );
+  const weight = weightTrend(data.weights, today)?.avg7 ?? null;
+  const n = dayNeeds(today, { goals: data.goals, profile: data.profile, weight, schedule: data.schedule ?? DEFAULT_SCHEDULE, plan: data.plan, activities: data.activities });
+  lines.push(`Bedarf heute (angepasst an Training & Alltag): ${m(n.targets)}${n.delta ? ` (${fmtSigned(n.delta)} kcal ggü. Schnitt)` : ''}`);
+  lines.push(`Mahlzeiten-Timing heute: ${n.slots.map((s) => `${s.time} ${s.slot}`).join(', ')}`);
+  return lines.join('\n');
+}
+
 /** Kompletter Datenstand als Text für den Coach bzw. den Beginn eines Chats. */
 export function buildSnapshot(data: AppData, today: ISODate, analysis = runAnalysis(data, today)): string {
   return [
@@ -212,6 +252,8 @@ export function buildSnapshot(data: AppData, today: ISODate, analysis = runAnaly
     `## Gewicht\n${describeWeight(data, today)}`,
     `## Ernährung (Tagessummen, letzte 14 Tage)\n${describeNutrition(data, today)}`,
     `## Training\n${describeTraining(data, today)}`,
+    `## Aktivitäten (Laufen, Rad, Schwimmen, Hyrox …; letzte 4 Wochen)\n${describeActivities(data, today)}`,
+    `## Trainingsplan, Alltag & Tagesbedarf\n${describePlanAndDay(data, today)}`,
     `## Schlaf (letzte 14 Nächte)\n${describeSleep(data, today)}`,
     `## Auswertung der App\n${describeAnalysis(analysis)}`,
     `## Lebensmittel-Bibliothek des Nutzers\n${describeFoodLibrary(data.foods)}`,

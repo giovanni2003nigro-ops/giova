@@ -1,12 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { errorMessage } from '../ai/client';
 import { generateCoachReport } from '../ai/coach';
-import { IconCamera, IconDumbbell, IconFood, IconMoon, IconSparkle } from '../components/icons';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { ActivityCard, fromLocal } from '../components/activity';
+import { IconCamera, IconDumbbell, IconMoon, IconRecord, IconSparkle } from '../components/icons';
 import { Markdown } from '../components/Markdown';
 import { Card, ErrorBox, Meter, RecommendationItem, Stat } from '../components/ui';
-import { useKV } from '../db';
+import { db, useKV } from '../db';
 import { navigate, useAnalysis, useApiKey, useAppData, useToday } from '../hooks';
-import { formatDateLong, formatDuration } from '../lib/dates';
+import { addDays, formatDateLong, formatDuration, weekStart } from '../lib/dates';
+import { seasonOf } from '../lib/leagues';
+import { formatDurationSec } from '../lib/sports';
+import { useDayNeeds } from '../needs';
 import { sumMacros } from '../lib/nutrition';
 import { fmt, fmtSigned } from '../lib/stats';
 import type { CoachReport } from '../types';
@@ -18,6 +23,9 @@ export function DashboardView() {
   const data = useAppData();
   const analysis = useAnalysis(data);
   const [showOk, setShowOk] = useState(false);
+  const needs = useDayNeeds(t);
+  const activities = useLiveQuery(() => db.activities.where('date').aboveOrEqual(addDays(t, -40)).toArray(), [t]);
+  const seasonMedalPts = useLiveQuery(() => db.medals.filter((m) => m.date.startsWith(seasonOf(t))).toArray(), [t]);
   if (!data || !analysis) return null;
 
   const todayMeals = data.meals.filter((m) => m.date === t);
@@ -26,7 +34,12 @@ export function DashboardView() {
   const todayExercises = [...new Set(todaySets.map((s) => s.exercise))];
   const lastNight = data.sleep.find((s) => s.date === t);
   const g = data.goals;
-  const isEmpty = !data.meals.length && !data.sets.length && !data.sleep.length && !data.weights.length;
+  const target = needs?.targets ?? g;
+  const isEmpty = !data.meals.length && !data.sets.length && !data.sleep.length && !data.weights.length && !activities?.length;
+  const week = (activities ?? []).filter((a) => a.date >= weekStart(t)).sort((a, b) => b.startTime - a.startTime);
+  const seasonPts =
+    (activities ?? []).filter((a) => a.date.startsWith(seasonOf(t))).reduce((s, a) => s + a.points, 0) +
+    (seasonMedalPts ?? []).reduce((s, m) => s + m.points, 0);
 
   const problems = analysis.recommendations.filter((r) => r.severity !== 'ok');
   const good = analysis.recommendations.filter((r) => r.severity === 'ok');
@@ -46,6 +59,13 @@ export function DashboardView() {
           <ol className="small text-2" style={{ margin: 0, paddingLeft: 18, display: 'grid', gap: 6 }}>
             <li>
               Lege unter <a href="#/ziele">Ziele</a> dein Ziel (Defizit, Erhalt, Aufbau, Kraft …), dein Profil und dein Gewicht fest.
+            </li>
+            <li>
+              <a href="#/aufzeichnen">Zeichne</a> Läufe, Radfahrten, Schwimmen, Hyrox oder Gym auf – oder importiere sie von deiner Garmin-Uhr. Jede Aktivität
+              bringt Punkte für deine <a href="#/ligen">Liga</a>.
+            </li>
+            <li>
+              Hinterlege deinen <a href="#/plan">Trainingsplan und Alltag</a> – dann berechnet die App deinen Bedarf für jeden Tag.
             </li>
             <li>
               Trage im Gym unter <a href="#/training">Training</a> jeden Satz ein – Übung, Gewicht, Wiederholungen.
@@ -88,12 +108,18 @@ export function DashboardView() {
       )}
 
       <Card title="Heute">
-        <Meter label="Kalorien" value={eaten.kcal} target={g.kcal} unit=" kcal" />
+        <Meter label="Kalorien" value={eaten.kcal} target={target.kcal} unit=" kcal" />
         <div className="grid-3">
-          <Meter compact label="Protein" value={eaten.protein} target={g.protein} unit=" g" />
-          <Meter compact label="Kohlenh." value={eaten.carbs} target={g.carbs} unit=" g" />
-          <Meter compact label="Fett" value={eaten.fat} target={g.fat} unit=" g" />
+          <Meter compact label="Protein" value={eaten.protein} target={target.protein} unit=" g" />
+          <Meter compact label="Kohlenh." value={eaten.carbs} target={target.carbs} unit=" g" />
+          <Meter compact label="Fett" value={eaten.fat} target={target.fat} unit=" g" />
         </div>
+        {needs && needs.delta !== 0 && (
+          <p className="tiny muted">
+            Tagesziel angepasst an Training & Alltag ({needs.delta > 0 ? '+' : ''}
+            {fmt(needs.delta)} kcal ggü. deinem Schnitt).
+          </p>
+        )}
         <div className="grid-2">
           <Stat
             tile
@@ -117,11 +143,11 @@ export function DashboardView() {
       </Card>
 
       <div className="grid-2">
+        <button className="btn primary" onClick={() => navigate('aufzeichnen')}>
+          <IconRecord /> Aufzeichnen
+        </button>
         <button className="btn" onClick={() => navigate('training')}>
           <IconDumbbell /> Satz
-        </button>
-        <button className="btn" onClick={() => navigate('essen')}>
-          <IconFood /> Essen
         </button>
         <button className="btn" onClick={() => navigate('essen')}>
           <IconCamera /> Scannen
@@ -130,6 +156,15 @@ export function DashboardView() {
           <IconMoon /> Schlaf
         </button>
       </div>
+
+      <Card title="Diese Woche" action={<a className="small" href="#/ligen">Liga</a>}>
+        <div className="grid-3">
+          <Stat tile label="Aktivitäten" value={week.length} />
+          <Stat tile label="Zeit" value={formatDurationSec(week.reduce((s, a) => s + a.durationSec, 0))} />
+          <Stat tile label="Punkte (Monat)" value={fmt(seasonPts)} />
+        </div>
+        {week[0] && <ActivityCard a={fromLocal(week[0])} />}
+      </Card>
 
       <div className="section-title">Zielabgleich & Empfehlungen</div>
       <Card>

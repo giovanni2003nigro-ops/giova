@@ -14,9 +14,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Giova Fit – Training, Ernährung & Schlaf',
+        name: 'Giova Fit – Sport, Ligen & Ernährung',
         short_name: 'Giova Fit',
-        description: 'Trainings-, Ernährungs- und Schlaftracker mit KI-Coach',
+        description: 'Laufen, Hyrox, Schwimmen, Gym & Co. aufzeichnen, in Ligen antreten und mit KI-Ernährungsplan trainieren',
         lang: 'de',
         theme_color: '#1a1a19',
         background_color: '#0d0d0d',

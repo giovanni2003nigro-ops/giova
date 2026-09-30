@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo, useState } from 'react';
 import { AddFoodSheet, macroText } from '../components/AddFoodSheet';
 import { BarChart } from '../components/charts';
+import { DayPlanCard } from '../components/DayPlanCard';
 import { FoodLibrarySheet } from '../components/FoodLibrarySheet';
 import { IconBook, IconCamera, IconPlus, IconTrash } from '../components/icons';
 import { Card, DateNav, Meter, Sheet } from '../components/ui';
@@ -11,6 +12,7 @@ import { useToday } from '../hooks';
 import { addDays, dateRange } from '../lib/dates';
 import { dailyTotals, sumMacros } from '../lib/nutrition';
 import { fmt } from '../lib/stats';
+import { useDayNeeds } from '../needs';
 import type { Food, Goals, MealType } from '../types';
 import { DEFAULT_GOALS, MEAL_LABELS, MEAL_TYPES } from '../types';
 
@@ -36,6 +38,9 @@ export function NutritionView() {
   const entries = useLiveQuery(() => db.meals.where('date').equals(date).toArray(), [date]) ?? [];
   const recent = useLiveQuery(() => db.meals.where('date').between(addDays(t, -13), t, true, true).toArray(), [t]) ?? [];
   const total = sumMacros(entries);
+  const needs = useDayNeeds(date);
+  // Tagesziel nach Training & Alltag, sonst das allgemeine Ziel
+  const target = needs?.targets ?? goals;
 
   const history = useMemo(() => {
     const totals = dailyTotals(recent);
@@ -47,13 +52,15 @@ export function NutritionView() {
       <DateNav date={date} onChange={setDate} />
 
       <Card title="Tagesbilanz">
-        <Meter label="Kalorien" value={total.kcal} target={goals.kcal} unit=" kcal" />
+        <Meter label="Kalorien" value={total.kcal} target={target.kcal} unit=" kcal" />
         <div className="grid-3">
-          <Meter compact label="Protein" value={total.protein} target={goals.protein} unit=" g" />
-          <Meter compact label="Kohlenh." value={total.carbs} target={goals.carbs} unit=" g" />
-          <Meter compact label="Fett" value={total.fat} target={goals.fat} unit=" g" />
+          <Meter compact label="Protein" value={total.protein} target={target.protein} unit=" g" />
+          <Meter compact label="Kohlenh." value={total.carbs} target={target.carbs} unit=" g" />
+          <Meter compact label="Fett" value={total.fat} target={target.fat} unit=" g" />
         </div>
       </Card>
+
+      {needs && <DayPlanCard date={date} needs={needs} />}
 
       <div className="grid-2">
         <button className="btn primary" onClick={() => setSheet({ kind: 'scan' })}>

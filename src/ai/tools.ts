@@ -8,7 +8,9 @@ import type { Food, Macros, MealEntry } from '../types';
 import { MEAL_LABELS, MEAL_TYPES } from '../types';
 import {
   buildSnapshot,
+  describeActivities,
   describeAnalysis,
+  describePlanAndDay,
   describeGoals,
   describeNutrition,
   describeSleep,
@@ -38,7 +40,7 @@ const Macros100 = z.object({
   fett: z.number().min(0),
 });
 
-const BEREICHE = ['heute', 'ernaehrung_14_tage', 'training', 'schlaf', 'gewicht', 'ziele', 'auswertung', 'alles'] as const;
+const BEREICHE = ['heute', 'ernaehrung_14_tage', 'training', 'aktivitaeten', 'plan_und_bedarf', 'schlaf', 'gewicht', 'ziele', 'auswertung', 'alles'] as const;
 
 export const CHAT_TOOLS: BetaTool[] = [
   {
@@ -130,7 +132,7 @@ export const CHAT_TOOLS: BetaTool[] = [
   {
     name: 'daten_abrufen',
     description:
-      'Liefert den AKTUELLEN Datenstand der App (der Datenstand im Systemprompt stammt vom Gesprächsbeginn). Bereiche: heute (Essen/Training/Schlaf heute + offene Makros), ernaehrung_14_tage, training (letzte 3 Wochen oder Verlauf einer Übung mit "uebung"), schlaf, gewicht, ziele, auswertung (automatischer Zielabgleich & Trends), alles.',
+      'Liefert den AKTUELLEN Datenstand der App (der Datenstand im Systemprompt stammt vom Gesprächsbeginn). Bereiche: heute (Essen/Training/Schlaf heute + offene Makros), ernaehrung_14_tage, training (Kraftsätze der letzten 3 Wochen oder Verlauf einer Übung mit "uebung"), aktivitaeten (Läufe, Radfahrten, Schwimmen, Hyrox … der letzten 4 Wochen), plan_und_bedarf (Trainingsplan, Alltag, Tagesbedarf & Mahlzeiten-Timing heute), schlaf, gewicht, ziele, auswertung (automatischer Zielabgleich & Trends), alles.',
     input_schema: {
       type: 'object',
       properties: {
@@ -325,6 +327,10 @@ async function execute(name: string, raw: unknown): Promise<string> {
           return describeNutrition(data, today);
         case 'training':
           return describeTraining(data, today, uebung);
+        case 'aktivitaeten':
+          return describeActivities(data, today);
+        case 'plan_und_bedarf':
+          return describePlanAndDay(data, today);
         case 'schlaf':
           return describeSleep(data, today);
         case 'gewicht':
