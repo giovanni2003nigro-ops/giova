@@ -17,4 +17,6 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      # Supabase-Migrationen gegen Postgres (auf ubuntu-latest vorinstalliert) + Abgleich mit der App
+      - run: npm run test:db
       - run: npm run build

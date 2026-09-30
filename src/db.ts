@@ -1,7 +1,10 @@
 import Dexie, { type EntityTable } from 'dexie';
 import { useLiveQuery } from 'dexie-react-hooks';
 import type {
+  Activity,
   ChatRecord,
+  DayPlan,
+  EarnedMedal,
   Exercise,
   Food,
   MealEntry,
@@ -59,6 +62,9 @@ class FitDB extends Dexie {
   weights!: EntityTable<WeightEntry, 'id'>;
   chats!: EntityTable<ChatRecord, 'id'>;
   kv!: EntityTable<KV, 'key'>;
+  activities!: EntityTable<Activity, 'id'>;
+  medals!: EntityTable<EarnedMedal, 'id'>;
+  dayPlans!: EntityTable<DayPlan, 'date'>;
 
   constructor() {
     super('giova-fit');
@@ -71,6 +77,12 @@ class FitDB extends Dexie {
       weights: '++id, &date',
       chats: '++id, updatedAt',
       kv: 'key',
+    });
+    // v2: Sportarten & Aktivitäten, Medaillen, KI-Tagespläne
+    this.version(2).stores({
+      activities: '++id, &uid, date, sport, startTime',
+      medals: 'id, key, earnedAt',
+      dayPlans: 'date',
     });
     this.on('populate', (tx) => {
       void tx

@@ -38,27 +38,77 @@ export function useObjectUrl(blob: Blob | undefined): string | undefined {
   return url;
 }
 
-export type Tab = 'heute' | 'training' | 'essen' | 'schlaf' | 'ziele' | 'coach' | 'einstellungen';
-const TABS: Tab[] = ['heute', 'training', 'essen', 'schlaf', 'ziele', 'coach', 'einstellungen'];
+export type RouteName =
+  | 'heute'
+  | 'feed'
+  | 'aufzeichnen'
+  | 'ligen'
+  | 'essen'
+  | 'profil'
+  | 'training'
+  | 'tracker'
+  | 'import'
+  | 'schlaf'
+  | 'ziele'
+  | 'coach'
+  | 'einstellungen'
+  | 'medaillen'
+  | 'plan'
+  | 'konto'
+  | 'aktivitaet'
+  | 'post'
+  | 'athlet';
 
-function readHash(): Tab {
-  const h = window.location.hash.replace(/^#\/?/, '') as Tab;
-  return TABS.includes(h) ? h : 'heute';
+const ROUTES: RouteName[] = [
+  'heute',
+  'feed',
+  'aufzeichnen',
+  'ligen',
+  'essen',
+  'profil',
+  'training',
+  'tracker',
+  'import',
+  'schlaf',
+  'ziele',
+  'coach',
+  'einstellungen',
+  'medaillen',
+  'plan',
+  'konto',
+  'aktivitaet',
+  'post',
+  'athlet',
+];
+
+export interface Route {
+  name: RouteName;
+  /** Optionaler Parameter, z. B. die ID bei #/aktivitaet/12 */
+  id?: string;
 }
 
-export function navigate(tab: Tab) {
-  window.location.hash = `/${tab}`;
+
+export function parseHash(hash: string): Route {
+  const [name, ...rest] = hash.replace(/^#\/?/, '').split('/');
+  if (!ROUTES.includes(name as RouteName)) return { name: 'heute' };
+  const id = rest.join('/');
+  return id ? { name: name as RouteName, id: decodeURIComponent(id) } : { name: name as RouteName };
 }
 
-export function useRoute(): Tab {
-  const [tab, setTab] = useState<Tab>(readHash);
+/** Navigiert zu einer Seite, z. B. navigate('ligen') oder navigate('aktivitaet', 12). */
+export function navigate(name: RouteName, id?: string | number) {
+  window.location.hash = id != null ? `/${name}/${encodeURIComponent(String(id))}` : `/${name}`;
+}
+
+export function useRoute(): Route {
+  const [route, setRoute] = useState<Route>(() => parseHash(window.location.hash));
   useEffect(() => {
     const on = () => {
-      setTab(readHash());
+      setRoute(parseHash(window.location.hash));
       window.scrollTo(0, 0);
     };
     window.addEventListener('hashchange', on);
     return () => window.removeEventListener('hashchange', on);
   }, []);
-  return tab;
+  return route;
 }

@@ -1,0 +1,22 @@
+[
+  { "sport": "laufen", "durationSec": 3000, "distanceM": 10000, "points": 120 },
+  { "sport": "laufen", "durationSec": 3600, "distanceM": 10000, "points": 100 },
+  { "sport": "laufen", "durationSec": 4800, "distanceM": 10000, "points": 75 },
+  { "sport": "laufen", "durationSec": 1500, "distanceM": 10000, "points": 150 },
+  { "sport": "laufen", "durationSec": 1200, "distanceM": 10000, "points": 0 },
+  { "sport": "laufen", "durationSec": 1800, "distanceM": 0, "points": 30 },
+  { "sport": "laufen", "durationSec": 36000, "distanceM": 60000, "points": 252 },
+  { "sport": "radfahren", "durationSec": 7200, "distanceM": 50000, "points": 125 },
+  { "sport": "radfahren", "durationSec": 3600, "distanceM": 70000, "points": 0 },
+  { "sport": "radfahren", "durationSec": 3600, "distanceM": 15000, "points": 26 },
+  { "sport": "schwimmen", "durationSec": 2400, "distanceM": 2000, "points": 100 },
+  { "sport": "schwimmen", "durationSec": 3600, "distanceM": 1000, "points": 28 },
+  { "sport": "wandern", "durationSec": 14400, "distanceM": 15000, "elevationGainM": 800, "points": 155 },
+  { "sport": "rudern", "durationSec": 1200, "distanceM": 5000, "points": 50 },
+  { "sport": "hyrox", "durationSec": 3600, "points": 120 },
+  { "sport": "hyrox", "durationSec": 5400, "race": true, "points": 270 },
+  { "sport": "gym", "durationSec": 3600, "points": 90 },
+  { "sport": "gym", "durationSec": 14400, "points": 225 },
+  { "sport": "powerlifting", "durationSec": 5400, "points": 135 },
+  { "sport": "powerlifting", "durationSec": 0, "points": 0 }
+]

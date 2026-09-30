@@ -3,8 +3,14 @@ import { useMemo, useState } from 'react';
 import { BarChart, LineChart } from '../components/charts';
 import { IconPlus, IconRepeat, IconTrash } from '../components/icons';
 import { Card, DateNav, Seg, Stat, Stepper, toast } from '../components/ui';
+import { activityFromTraining, estimateStrengthDuration, saveActivity, updateActivity, useShareDefault } from '../activities';
 import { db, ensureExercise } from '../db';
+import { navigate } from '../hooks';
+import { liftOf } from '../lib/medals';
+import { formatDurationSec, parseClock } from '../lib/sports';
 import { useAnalysis, useAppData, useToday } from '../hooks';
+import type { Visibility } from '../types';
+import { VISIBILITY_LABELS } from '../types';
 import { addDays, formatDateShort, formatDayMonth, relativeDay } from '../lib/dates';
 import { fmt, pctSigned } from '../lib/stats';
 import {
@@ -256,7 +262,71 @@ function LogView({ date, setDate }: { date: string; setDate: (d: string) => void
           );
         })}
       </Card>
+      {daySets.length > 0 && <ShareSessionCard date={date} sets={daySets} />}
     </>
+  );
+}
+
+/** Krafteinheit eines Tages als Aktivität speichern – für Feed, Punkte und Liga. */
+function ShareSessionCard({ date, sets }: { date: string; sets: WorkoutSet[] }) {
+  const existing = useLiveQuery(() => db.activities.where('date').equals(date).filter((a) => a.source === 'training').first(), [date]);
+  const shareDefault = useShareDefault();
+  const lifts = sets.filter((s) => liftOf(s.exercise)).length;
+  const [sport, setSport] = useState<'gym' | 'powerlifting'>(lifts >= sets.length / 2 ? 'powerlifting' : 'gym');
+  const [duration, setDuration] = useState('');
+  const [visibility, setVisibility] = useState<Visibility | null>(null);
+  const estimated = estimateStrengthDuration(sets);
+  const durationSec = parseClock(duration) ?? existing?.durationSec ?? estimated;
+
+  const save = async () => {
+    if (existing?.id != null) {
+      const fresh = await activityFromTraining(date, existing.sport as 'gym' | 'powerlifting', durationSec);
+      await updateActivity(existing.id, { strength: fresh.strength, powerlifting: fresh.powerlifting, durationSec });
+      toast('Aktivität aktualisiert');
+      return;
+    }
+    const id = await saveActivity(await activityFromTraining(date, sport, durationSec, { visibility: visibility ?? shareDefault }));
+    toast('Als Aktivität gespeichert 🏋️');
+    navigate('aktivitaet', id);
+  };
+
+  return (
+    <Card title={existing ? 'Als Aktivität gespeichert ✓' : 'Einheit abschließen'}>
+      {existing ? (
+        <p className="small text-2">
+          {existing.title} · {formatDurationSec(existing.durationSec)} · +{fmt(existing.points)} Punkte.{' '}
+          <a href={`#/aktivitaet/${existing.id}`}>Ansehen</a>
+        </p>
+      ) : (
+        <>
+          <p className="small text-2">Speichert die Sätze als Aktivität – mit Punkten für deine Liga und zum Teilen im Feed.</p>
+          <Seg
+            label="Sportart"
+            value={sport}
+            onChange={setSport}
+            options={[
+              { value: 'gym', label: '🏋️ Gym' },
+              { value: 'powerlifting', label: '🏋️‍♂️ Powerlifting' },
+            ]}
+          />
+          <Seg
+            label="Sichtbarkeit"
+            value={visibility ?? shareDefault}
+            onChange={setVisibility}
+            options={(Object.keys(VISIBILITY_LABELS) as Visibility[]).map((v) => ({ value: v, label: VISIBILITY_LABELS[v] }))}
+          />
+        </>
+      )}
+      <label className="field">
+        <span>
+          Dauer <span className="muted">(geschätzt {formatDurationSec(estimated)})</span>
+        </span>
+        <input className="input" inputMode="numeric" placeholder={String(Math.round((existing?.durationSec ?? estimated) / 60))} value={duration} onChange={(e) => setDuration(e.target.value)} />
+      </label>
+      <button className="btn primary" onClick={save}>
+        {existing ? 'Mit neuen Sätzen aktualisieren' : 'Speichern & teilen'}
+      </button>
+    </Card>
   );
 }
 

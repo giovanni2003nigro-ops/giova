@@ -1,10 +1,10 @@
 import { db } from '../db';
-import type { Food } from '../types';
+import type { Activity, Food } from '../types';
 import { base64ToBlob, blobToBase64 } from './image';
 
 interface BackupFile {
   app: 'giova-fit';
-  version: 1;
+  version: 1 | 2;
   exportedAt: string;
   data: {
     exercises: unknown[];
@@ -15,7 +15,19 @@ interface BackupFile {
     weights: unknown[];
     chats: unknown[];
     kv: { key: string; value: unknown }[];
+    // ab Version 2
+    activities?: (Omit<Activity, 'photo'> & { photo?: { type: string; base64: string } })[];
+    medals?: unknown[];
+    dayPlans?: unknown[];
   };
+}
+
+async function packPhoto<T extends { photo?: Blob }>({ photo, ...rest }: T) {
+  return { ...rest, ...(photo ? { photo: { type: photo.type || 'image/jpeg', base64: await blobToBase64(photo) } } : {}) };
+}
+
+function unpackPhoto<T extends { photo?: { type: string; base64: string } }>({ photo, ...rest }: T) {
+  return { ...rest, ...(photo ? { photo: base64ToBlob(photo.base64, photo.type) } : {}) };
 }
 
 /** Exportiert alle Daten (inkl. Fotos) als JSON-Datei. Der API-Schlüssel wird nicht exportiert. */
@@ -23,9 +35,12 @@ export async function exportBackup(): Promise<Blob> {
   const foods = await db.foods.toArray();
   const backup: BackupFile = {
     app: 'giova-fit',
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     data: {
+      activities: await Promise.all((await db.activities.toArray()).map(packPhoto)),
+      medals: await db.medals.toArray(),
+      dayPlans: await db.dayPlans.toArray(),
       exercises: await db.exercises.toArray(),
       sets: await db.sets.toArray(),
       foods: await Promise.all(
@@ -53,8 +68,23 @@ export async function importBackup(file: Blob): Promise<void> {
     ...f,
     ...(photo ? { photo: base64ToBlob(photo.base64, photo.type) } : {}),
   }));
-  await db.transaction('rw', [db.exercises, db.sets, db.foods, db.meals, db.sleep, db.weights, db.chats, db.kv], async () => {
-    await Promise.all([db.exercises.clear(), db.sets.clear(), db.foods.clear(), db.meals.clear(), db.sleep.clear(), db.weights.clear(), db.chats.clear()]);
+  const activities = (d.activities ?? []).map(unpackPhoto) as Activity[];
+  await db.transaction('rw', [db.exercises, db.sets, db.foods, db.meals, db.sleep, db.weights, db.chats, db.kv, db.activities, db.medals, db.dayPlans], async () => {
+    await Promise.all([
+      db.exercises.clear(),
+      db.sets.clear(),
+      db.foods.clear(),
+      db.meals.clear(),
+      db.sleep.clear(),
+      db.weights.clear(),
+      db.chats.clear(),
+      db.activities.clear(),
+      db.medals.clear(),
+      db.dayPlans.clear(),
+    ]);
+    await db.activities.bulkAdd(activities);
+    await db.medals.bulkAdd((d.medals ?? []) as never[]);
+    await db.dayPlans.bulkAdd((d.dayPlans ?? []) as never[]);
     const apiKey = await db.kv.get('apiKey');
     await db.kv.clear();
     if (apiKey) await db.kv.put(apiKey);
@@ -65,7 +95,7 @@ export async function importBackup(file: Blob): Promise<void> {
     await db.sleep.bulkAdd(d.sleep as never[]);
     await db.weights.bulkAdd(d.weights as never[]);
     await db.chats.bulkAdd(d.chats as never[]);
-    await db.kv.bulkPut(d.kv.filter((r) => r.key !== 'apiKey'));
+    await db.kv.bulkPut(d.kv.filter((r) => r.key !== 'apiKey' && r.key !== 'trackerDraft'));
   });
 }
 

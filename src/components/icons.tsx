@@ -154,3 +154,105 @@ export const IconRepeat = (p: P) => (
     <path d="M20 13v2a4 4 0 0 1-4 4H4" />
   </svg>
 );
+export const IconRecord = (p: P) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <circle cx="12" cy="12" r="4" fill="currentColor" />
+  </svg>
+);
+export const IconTrophy = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M8 4h8v5a4 4 0 0 1-8 0V4Z" />
+    <path d="M16 5h3v2a3 3 0 0 1-3 3M8 5H5v2a3 3 0 0 0 3 3M12 13v4M8 20h8M9 17h6" />
+  </svg>
+);
+export const IconUsers = (p: P) => (
+  <svg {...base(p)}>
+    <circle cx="9" cy="8" r="3.5" />
+    <path d="M2.5 20a6.5 6.5 0 0 1 13 0" />
+    <path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5" />
+  </svg>
+);
+export const IconUser = (p: P) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 21a8 8 0 0 1 16 0" />
+  </svg>
+);
+export const IconPin = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M12 21s-7-6.1-7-11.5a7 7 0 0 1 14 0C19 14.9 12 21 12 21Z" />
+    <circle cx="12" cy="9.5" r="2.5" />
+  </svg>
+);
+export const IconUpload = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M12 16V4M7 9l5-5 5 5" />
+    <path d="M4 16v4h16v-4" />
+  </svg>
+);
+export const IconPlay = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M7 4.5v15l12-7.5-12-7.5Z" fill="currentColor" />
+  </svg>
+);
+export const IconPause = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M8 5v14M16 5v14" strokeWidth={3.5} />
+  </svg>
+);
+export const IconHeart = (p: P & { filled?: boolean }) => {
+  const { filled, ...rest } = p;
+  return (
+    <svg {...base(rest)}>
+      <path d="M12 20s-7.5-4.6-9-9.5C2 7 4.2 4.5 7 4.5c2 0 3.4 1.2 5 3 1.6-1.8 3-3 5-3 2.8 0 5 2.5 4 6-1.5 4.9-9 9.5-9 9.5Z" fill={filled ? 'currentColor' : 'none'} />
+    </svg>
+  );
+};
+export const IconComment = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M20 12a8 8 0 0 1-11.6 7.1L4 20l1-4.2A8 8 0 1 1 20 12Z" />
+  </svg>
+);
+export const IconShare = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M12 3v12M7 8l5-5 5 5" />
+    <path d="M5 12v8h14v-8" />
+  </svg>
+);
+export const IconBack = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M19 12H5M11 6l-6 6 6 6" />
+  </svg>
+);
+export const IconMedal = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M8 3h8l-2 6h-4L8 3Z" />
+    <circle cx="12" cy="15" r="5.5" />
+    <path d="m12 12.5.9 1.8 2 .3-1.4 1.4.3 2-1.8-1-1.8 1 .3-2-1.4-1.4 2-.3.9-1.8Z" />
+  </svg>
+);
+export const IconCalendar = (p: P) => (
+  <svg {...base(p)}>
+    <rect x="3.5" y="5" width="17" height="15" rx="2" />
+    <path d="M3.5 10h17M8 3v4M16 3v4" />
+  </svg>
+);
+export const IconSearch = (p: P) => (
+  <svg {...base(p)}>
+    <circle cx="11" cy="11" r="6.5" />
+    <path d="m16 16 4.5 4.5" />
+  </svg>
+);
+export const IconLock = (p: P) => (
+  <svg {...base(p)}>
+    <rect x="5" y="10.5" width="14" height="10" rx="2" />
+    <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+  </svg>
+);
+export const IconFile = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M6 3h8l5 5v13H6V3Z" />
+    <path d="M14 3v5h5" />
+  </svg>
+);
