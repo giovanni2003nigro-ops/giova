@@ -77,7 +77,7 @@ export function DashboardView() {
               Trag morgens deinen <a href="#/schlaf">Schlaf</a> ein.
             </li>
             <li>
-              Für Foto-Erkennung und Coach-Chat den Claude-API-Schlüssel in den <a href="#/einstellungen">Einstellungen</a> hinterlegen.
+              Für Foto-Erkennung, KI-Plan und Coach den KI-Schlüssel (Claude API) in den <a href="#/einstellungen">Einstellungen</a> hinterlegen.
             </li>
           </ol>
           <p className="small muted">Ich vergleiche dann alles mit deinen Zielen und sage dir, was du ändern solltest.</p>
@@ -252,7 +252,7 @@ function CoachReportCard() {
       }
     >
       <p className="small text-2">
-        Claude wertet Training, Ernährung, Schlaf und Gewicht gegen deine Ziele aus und sagt dir, was du konkret ändern solltest.
+        Die KI wertet Training, Ernährung, Schlaf und Gewicht gegen deine Ziele aus und sagt dir, was du konkret ändern solltest.
       </p>
       {error && <ErrorBox>{error}</ErrorBox>}
       {text ? <Markdown text={text} /> : busy && <div className="typing"><span /><span /><span /></div>}

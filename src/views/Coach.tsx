@@ -50,7 +50,7 @@ export function CoachView() {
       <div className="content">
         <Card title="KI-Coach einrichten">
           <p className="small text-2">
-            Der Coach nutzt <strong>Claude Sonnet 5.5</strong>. Er kennt deine Ziele, dein Training, deine Ernährung und deinen Schlaf, berechnet
+            Dein persönlicher KI-Coach kennt deine Ziele, dein Training, deine Ernährung und deinen Schlaf, berechnet
             Nährwert-Kombinationen aus deiner Bibliothek und kann Mahlzeiten direkt eintragen.
           </p>
           <p className="small text-2">Dafür brauchst du einen API-Schlüssel von console.anthropic.com.</p>
@@ -137,7 +137,7 @@ export function CoachView() {
         <button className="btn small" onClick={() => setShowHistory(true)}>
           Verlauf
         </button>
-        <span className="tiny muted">Claude Sonnet 5.5</span>
+        <span className="tiny muted">KI-Coach</span>
         <button className="btn small" onClick={newChat} disabled={!chat}>
           <IconPlus /> Neuer Chat
         </button>

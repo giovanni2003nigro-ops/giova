@@ -5,11 +5,13 @@ Plattform für Sportarten, die man meistens allein macht – **Laufen, Radfahren
 Die App läuft als Web-App (PWA) im Browser und lässt sich auf dem Handy wie eine App installieren.
 
 <p>
-  <img src="docs/screenshots/light-01-heute.png" width="200" alt="Übersicht">
-  <img src="docs/screenshots/dark-04-aktivitaet.png" width="200" alt="Aktivität mit Karte (dunkel)">
-  <img src="docs/screenshots/light-05-ligen.png" width="200" alt="Ligen">
-  <img src="docs/screenshots/dark-09-essen.png" width="200" alt="Tagesbedarf (dunkel)">
+  <img src="docs/screenshots/dark-08-feed.png" width="200" alt="Feed">
+  <img src="docs/screenshots/dark-04-aktivitaet.png" width="200" alt="Aktivität mit Karte">
+  <img src="docs/screenshots/story-dark.png" width="200" alt="Story-Bild zum Teilen">
+  <img src="docs/screenshots/dark-05-ligen.png" width="200" alt="Ligen">
 </p>
+
+Design: dunkel mit Orange-Rot-Verlauf, sportliche Schriften (Barlow Condensed für Zahlen, Plus Jakarta Sans für Text; beide in der App gebündelt, ohne Google-Server). Ein helles Design lässt sich unter ⚙︎ → *Darstellung* wählen.
 
 ## Funktionen
 
@@ -19,6 +21,7 @@ Die App läuft als Web-App (PWA) im Browser und lässt sich auf dem Handy wie ei
 - **Krafttraining:** Sätze wie bisher eintragen. Mit „Einheit abschließen“ wird der Tag zur Aktivität (Gym oder Powerlifting inklusive e1RM der Wettkampfübungen).
 - **Manuell**, zum Beispiel für einen Hyrox-Wettkampf, eine Bahn-Einheit oder ein Laufband.
 - Jede Aktivität hat eine Detailseite mit Karte, Kilometer-Splits (bzw. 100-m-Abschnitten beim Schwimmen), Puls, Höhenmetern, Foto und Punkten.
+- **Als Story teilen:** Aus jeder Aktivität wird ein Bild im Story-Format (1080 × 1920) mit leuchtender Strecke und den wichtigsten Werten. Es gibt drei Hintergründe: schwarz, dein eigenes Foto oder transparent als Sticker zum Auflegen in Instagram. Das Bild geht direkt ins Teilen-Menü des Handys oder wird gespeichert.
 
 ### Community (Supabase)
 - Eigenes Konto mit Profil, Profilbild, Sportarten und Region.

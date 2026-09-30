@@ -83,7 +83,7 @@ export function LabelScanner({ onSaved }: { onSaved: (food: Food) => void }) {
           <IconCamera />
           <strong>Nährwerttabelle fotografieren</strong>
           <span className="small muted">
-            {apiKey ? 'Die Werte werden automatisch mit Claude ausgelesen.' : 'Ohne API-Schlüssel trägst du die Werte selbst ein – das Foto wird trotzdem gespeichert.'}
+            {apiKey ? 'Die Werte werden automatisch per KI ausgelesen.' : 'Ohne API-Schlüssel trägst du die Werte selbst ein – das Foto wird trotzdem gespeichert.'}
           </span>
         </button>
       ) : (
@@ -100,7 +100,7 @@ export function LabelScanner({ onSaved }: { onSaved: (food: Food) => void }) {
 
       {!apiKey && (
         <div className="hint-box">
-          💡 Mit einem Claude-API-Schlüssel werden die Nährwerte automatisch erkannt.{' '}
+          💡 Mit einem KI-Schlüssel (Claude API) werden die Nährwerte automatisch erkannt.{' '}
           <a href="#/einstellungen" onClick={() => navigate('einstellungen')}>
             Jetzt einrichten
           </a>
@@ -113,7 +113,7 @@ export function LabelScanner({ onSaved }: { onSaved: (food: Food) => void }) {
             <span />
             <span />
           </span>
-          Claude liest die Nährwerte aus …
+          Die KI liest die Nährwerte aus …
         </div>
       )}
       {status === 'error' && <ErrorBox>{error}</ErrorBox>}

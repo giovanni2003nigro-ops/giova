@@ -40,18 +40,18 @@ const TITLES: Record<RouteName, string> = {
   heute: 'Übersicht',
   feed: 'Feed',
   aufzeichnen: 'Aufzeichnen',
-  ligen: 'Ligen & Ranglisten',
+  ligen: 'Ligen',
   essen: 'Ernährung',
   profil: 'Profil',
   training: 'Krafttraining',
-  tracker: 'Live-Aufzeichnung',
+  tracker: 'Live',
   import: 'Import',
   schlaf: 'Schlaf',
   ziele: 'Ziele & Körper',
   coach: 'KI-Coach',
   einstellungen: 'Einstellungen',
   medaillen: 'Medaillen',
-  plan: 'Trainingsplan & Alltag',
+  plan: 'Plan & Alltag',
   konto: 'Konto',
   aktivitaet: 'Aktivität',
   post: 'Aktivität',
@@ -101,8 +101,8 @@ export function App() {
             </button>
           )}
           <div style={{ minWidth: 0 }}>
+            <span className="wordmark">Giova</span>
             <h1>{TITLES[route.name]}</h1>
-            <div className="sub">Giova Fit</div>
           </div>
         </div>
         <div className="row" style={{ gap: 0 }}>
