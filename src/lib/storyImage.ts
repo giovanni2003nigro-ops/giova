@@ -1,5 +1,6 @@
 import type { ActivityCardData } from '../components/activity';
 import { activityStats } from '../components/activity';
+import { ACCENTS, FONTS_LARGE, readAppearance } from './appearance';
 import { SPORT_DEFS } from './sports';
 
 /**
@@ -10,15 +11,17 @@ export type StoryBackground = 'dark' | 'photo' | 'transparent';
 
 const W = 1080;
 const H = 1920;
-const ORANGE = ['#ff8a1a', '#ff4a22', '#ff2d3a'];
-const DISPLAY = '"Barlow Condensed", "Plus Jakarta Sans Variable", sans-serif';
-const BODY = '"Plus Jakarta Sans Variable", system-ui, sans-serif';
+// Akzentfarbe und Schrift wie in der App gewählt
+let GRAD = ACCENTS.rot.grad;
+let RGB = ACCENTS.rot.rgb;
+let DISPLAY = FONTS_LARGE.poppins.display;
+let BODY = FONTS_LARGE.poppins.body;
 
 function gradient(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number) {
   const g = ctx.createLinearGradient(x0, y0, x1, y1);
-  g.addColorStop(0, ORANGE[0]);
-  g.addColorStop(0.55, ORANGE[1]);
-  g.addColorStop(1, ORANGE[2]);
+  g.addColorStop(0, GRAD[0]);
+  g.addColorStop(0.55, GRAD[1]);
+  g.addColorStop(1, GRAD[2]);
   return g;
 }
 
@@ -82,7 +85,7 @@ function drawRoute(ctx: CanvasRenderingContext2D, route: [number, number][], box
   ctx.lineJoin = 'round';
   ctx.strokeStyle = gradient(ctx, box.x, box.y, box.x + box.w, box.y + box.h);
   // Auf Schwarz leuchtet die Linie; als Sticker bekommt sie einen dezenten dunklen Schatten für jeden Untergrund
-  ctx.shadowColor = sticker ? 'rgba(0, 0, 0, 0.45)' : 'rgba(255, 80, 30, 0.75)';
+  ctx.shadowColor = sticker ? 'rgba(0, 0, 0, 0.45)' : `rgba(${RGB}, 0.75)`;
   ctx.shadowBlur = sticker ? 14 : 40;
   ctx.lineWidth = 16;
   ctx.beginPath();
@@ -104,6 +107,13 @@ function drawRoute(ctx: CanvasRenderingContext2D, route: [number, number][], box
 }
 
 export async function renderStory(a: ActivityCardData, background: StoryBackground, photo?: Blob): Promise<Blob> {
+  const look = readAppearance();
+  GRAD = ACCENTS[look.accent].grad;
+  RGB = ACCENTS[look.accent].rgb;
+  DISPLAY = FONTS_LARGE[look.fontLarge].display;
+  BODY = FONTS_LARGE[look.fontLarge].body;
+  // Schmale Schriften (Barlow) vertragen größere Zahlen
+  const numScale = look.fontLarge === 'barlow' ? 1 : 0.8;
   // Schriften müssen geladen sein, bevor auf die Canvas gezeichnet wird
   await Promise.all([
     document.fonts.load(`italic 800 100px ${DISPLAY}`),
@@ -133,13 +143,13 @@ export async function renderStory(a: ActivityCardData, background: StoryBackgrou
     ctx.fillStyle = '#0a0a0b';
     ctx.fillRect(0, 0, W, H);
     const glow = ctx.createRadialGradient(W * 0.85, H * 0.12, 0, W * 0.85, H * 0.12, W);
-    glow.addColorStop(0, 'rgba(255, 90, 31, 0.38)');
-    glow.addColorStop(1, 'rgba(255, 90, 31, 0)');
+    glow.addColorStop(0, `rgba(${RGB}, 0.38)`);
+    glow.addColorStop(1, `rgba(${RGB}, 0)`);
     ctx.fillStyle = glow;
     ctx.fillRect(0, 0, W, H);
     const glow2 = ctx.createRadialGradient(W * 0.1, H * 0.95, 0, W * 0.1, H * 0.95, W * 0.9);
-    glow2.addColorStop(0, 'rgba(255, 45, 58, 0.22)');
-    glow2.addColorStop(1, 'rgba(255, 45, 58, 0)');
+    glow2.addColorStop(0, `rgba(${RGB}, 0.2)`);
+    glow2.addColorStop(1, `rgba(${RGB}, 0)`);
     ctx.fillStyle = glow2;
     ctx.fillRect(0, 0, W, H);
   }
@@ -197,7 +207,7 @@ export async function renderStory(a: ActivityCardData, background: StoryBackgrou
     // Zahl groß, Einheit klein dahinter – bei Bedarf verkleinern, damit alles in die Spalte passt
     const [num, ...rest] = s.value.split(' ');
     const unit = rest.join(' ');
-    let size = stats.length > 2 ? 112 : 128;
+    let size = Math.round((stats.length > 2 ? 112 : 128) * numScale);
     const measure = () => {
       ctx.font = `italic 800 ${size}px ${DISPLAY}`;
       const nw = ctx.measureText(num).width;

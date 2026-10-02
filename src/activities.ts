@@ -4,13 +4,13 @@ import { cloudError, currentUserId, supabase, useSession } from './cloud/client'
 import { publishActivity, syncMedals, unpublishActivity } from './cloud/api';
 import { toast } from './components/ui';
 import { db, getKV, useKV } from './db';
+import { loadGoals } from './needs';
 import { today as getToday, toISODate } from './lib/dates';
 import { evaluateMedals, liftOf, MEDAL_BY_KEY } from './lib/medals';
 import { activityPoints } from './lib/points';
 import { estimateKcal, newUid, SPORT_DEFS } from './lib/sports';
 import { estimate1RM, sessionsByExercise } from './lib/training';
-import type { Activity, Goals, PowerliftingData, Sport, StrengthSummary, TrainingPlan, Visibility, WorkoutSet } from './types';
-import { DEFAULT_GOALS } from './types';
+import type { Activity, PowerliftingData, Sport, StrengthSummary, TrainingPlan, Visibility, WorkoutSet } from './types';
 
 export type NewActivity = Omit<Activity, 'id' | 'uid' | 'points' | 'createdAt' | 'visibility'> & {
   uid?: string;
@@ -150,7 +150,7 @@ export function useMedalWatcher() {
       db.meals.toArray(),
       db.sleep.toArray(),
       db.weights.toArray(),
-      getKV<Goals>('goals', DEFAULT_GOALS),
+      loadGoals(),
       getKV<TrainingPlan | null>('trainingPlan', null),
     ]);
     return evaluateMedals({ today: getToday(), activities, sets, meals, sleep, weights, goals, plan });

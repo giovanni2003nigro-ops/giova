@@ -1,3 +1,4 @@
+import { InfoBang } from './InfoBang';
 import type { LabelScan } from '../ai/labelScan';
 import { macrosPlausible, kcalFromMacros } from '../lib/nutrition';
 import { fmt } from '../lib/stats';
@@ -146,9 +147,14 @@ export function FoodForm({ draft, onChange }: { draft: FoodDraft; onChange: (d: 
         <NumField label="Salz" suffix="g" value={draft.salt} onChange={set('salt')} />
       </div>
       {!plausible && (
-        <div className="hint-box">
-          ⚠ Die Makros ergeben ca. {fmt(kcalFromMacros({ protein: draft.protein as number, carbs: draft.carbs as number, fat: draft.fat as number }))} kcal –
-          bitte die Werte prüfen.
+        <div className="row between">
+          <span className="small muted">Makros und Kalorien passen nicht zusammen</span>
+          <InfoBang title="Werte prüfen" tone="warn">
+            <p>
+              Die Makros ergeben ca. {fmt(kcalFromMacros({ protein: draft.protein as number, carbs: draft.carbs as number, fat: draft.fat as number }))} kcal –
+              bitte die Werte prüfen.
+            </p>
+          </InfoBang>
         </div>
       )}
       <div className="grid-2">

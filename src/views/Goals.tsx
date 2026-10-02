@@ -2,15 +2,20 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useMemo, useState } from 'react';
 import { LineChart } from '../components/charts';
 import { IconPlus, IconTrash } from '../components/icons';
+import { InfoBang } from '../components/InfoBang';
 import { Card, Meter, NumField, Seg, Stat, toast } from '../components/ui';
 import { db, setKV, useKV } from '../db';
 import { useAnalysis, useAppData, useToday } from '../hooks';
 import { movingAverage } from '../lib/body';
 import { addDays, formatDateShort } from '../lib/dates';
-import { ACTIVITY_LEVELS, GOAL_CONFIG, kcalOfTargets, suggestTargets } from '../lib/goals';
+import { resolveGoals } from '../lib/autoGoals';
+import { isAuto, weekNeeds, type NeedsInput } from '../lib/dailyNeeds';
+import { ACTIVITY_LEVELS, GOAL_CONFIG, KCAL_PER_KG_WEEK_PER_DAY, kcalOfTargets } from '../lib/goals';
+import { checkRules, enforceGoals, limits } from '../lib/guardrails';
+import { loadNeedsInput } from '../needs';
 import { fmt, fmtSigned } from '../lib/stats';
 import type { GoalType, Goals, Profile, StrengthGoal } from '../types';
-import { DEFAULT_GOALS, GOAL_LABELS } from '../types';
+import { DEFAULT_GOALS, GOAL_LABELS, WEEKDAY_SHORT } from '../types';
 
 type Num = number | '';
 
@@ -25,9 +30,10 @@ function GoalsForm({ initialGoals, initialProfile }: { initialGoals: Goals; init
   const t = useToday();
   const data = useAppData();
   const analysis = useAnalysis(data);
+  const base = useLiveQuery(() => loadNeedsInput(t), [t]);
   const exercises = useLiveQuery(() => db.exercises.orderBy('name').toArray(), []) ?? [];
 
-  const [goals, setGoals] = useState<Goals>(initialGoals);
+  const [goals, setGoals] = useState<Goals>({ ...initialGoals, auto: initialGoals.auto !== false });
   const [sex, setSex] = useState<'m' | 'w'>(initialProfile?.sex ?? 'm');
   const [age, setAge] = useState<Num>(initialProfile?.age ?? '');
   const [height, setHeight] = useState<Num>(initialProfile?.height ?? '');
@@ -40,30 +46,71 @@ function GoalsForm({ initialGoals, initialProfile }: { initialGoals: Goals; init
   };
   const num = (k: keyof Goals) => (v: Num) => update({ [k]: v === '' ? 0 : v } as Partial<Goals>);
 
-  const weight = analysis?.weight?.avg7 ?? null;
+  const weight = base?.weight ?? analysis?.weight?.avg7 ?? null;
   const profile: Profile | null = age !== '' && height !== '' ? { sex, age, height, activity } : null;
 
-  const suggest = () => {
-    if (!profile) return toast('Bitte Alter und Größe eintragen.');
-    if (!weight) return toast('Bitte zuerst dein Gewicht unten eintragen.');
-    const s = suggestTargets(profile, weight, goals.type, analysis?.actualTdee);
-    update({ kcal: s.kcal, protein: s.protein, carbs: s.carbs, fat: s.fat, weeklyRate: s.weeklyRate });
-    toast(`Vorschlag berechnet (Verbrauch ~${fmt(s.tdee)} kcal${analysis?.actualTdee ? ', aus deinen Daten' : ''})`);
+  // Live-Vorschau: Mit jeder Eingabe (Rate, Ziel, Profil) neu berechnet – mit Alltag, Plan und gemessenem Verbrauch
+  const preview = useMemo(() => {
+    if (!base) return null;
+    const input: NeedsInput = { ...base, goals, profile, weight };
+    const resolved = resolveGoals(input, t);
+    const week = weekNeeds(t, { ...input, goals: resolved });
+    const lim = limits(profile, weight);
+    return { resolved, week, lim, rules: checkRules(resolved, base.plan, lim), auto: isAuto(input) };
+  }, [base, goals, profile?.sex, profile?.age, profile?.height, profile?.activity, weight, t]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const changeRate = (v: Num) => {
+    const rate = v === '' ? 0 : v;
+    // Manuell: Kalorien wandern mit der Rate mit (1 kg/Woche ≈ 1.100 kcal/Tag), Kohlenhydrate gleichen aus
+    if (goals.auto === false) {
+      const shift = Math.round(((rate - goals.weeklyRate) * KCAL_PER_KG_WEEK_PER_DAY) / 10) * 10;
+      update({ weeklyRate: rate, kcal: goals.kcal + shift, carbs: Math.max(0, goals.carbs + Math.round(shift / 4)) });
+    } else update({ weeklyRate: rate });
+  };
+
+  const changeType = (type: GoalType) => {
+    if (weight) {
+      const weeklyRate = Math.round(weight * GOAL_CONFIG[type].rateFraction * 20) / 20;
+      update({ type, weeklyRate });
+      toast(`Wochenrate auf ${fmtSigned(weeklyRate, 2)} kg gesetzt – kannst du unten anpassen.`);
+    } else update({ type });
+  };
+
+  const takeOver = () => {
+    if (!preview?.auto) return toast('Für die Berechnung brauche ich Alter, Größe und dein Gewicht.');
+    const r = preview.resolved;
+    update({ kcal: r.kcal, protein: r.protein, carbs: r.carbs, fat: r.fat });
+    toast('Berechnete Werte übernommen');
   };
 
   const save = async () => {
-    await setKV('goals', goals);
+    let next: Goals = goals;
+    if (preview?.auto && goals.auto !== false) {
+      // Letzte berechnete Werte mitspeichern – Startwerte, falls später auf „Manuell“ gewechselt wird
+      const r = preview.resolved;
+      next = { ...goals, kcal: r.kcal, protein: r.protein, carbs: r.carbs, fat: r.fat };
+    }
+    // Rahmenbedingungen gelten immer – Abweichungen werden angepasst und erklärt
+    const { goals: safe, changes } = enforceGoals(next, limits(profile, weight));
+    await setKV('goals', safe);
     if (profile) await setKV('profile', profile);
+    setGoals(safe);
     setDirty(false);
-    toast('Ziele gespeichert');
+    toast(changes.length ? `Gespeichert – angepasst: ${changes.join(' · ')}` : 'Ziele gespeichert');
   };
 
   const macroKcal = kcalOfTargets(goals);
+  const auto = goals.auto !== false;
+  const r = preview?.resolved;
+  const week = preview?.week ?? [];
+  const max = Math.max(1, ...week.map((d) => d.targets.kcal));
+  const todayNeeds = week.find((d) => d.date === t);
+  const broken = preview?.rules.filter((x) => !x.ok) ?? [];
 
   return (
     <div className="content">
       <Card title="Dein Ziel">
-        <select className="input" value={goals.type} onChange={(e) => update({ type: e.target.value as GoalType })} aria-label="Zieltyp">
+        <select className="input" value={goals.type} onChange={(e) => changeType(e.target.value as GoalType)} aria-label="Zieltyp">
           {(Object.keys(GOAL_LABELS) as GoalType[]).map((k) => (
             <option key={k} value={k}>
               {GOAL_LABELS[k]}
@@ -90,50 +137,37 @@ function GoalsForm({ initialGoals, initialProfile }: { initialGoals: Goals; init
           <NumField label="Alter" suffix="Jahre" value={age} onChange={(v) => (setAge(v), setDirty(true))} />
           <NumField label="Größe" suffix="cm" value={height} onChange={(v) => (setHeight(v), setDirty(true))} />
         </div>
-        <label className="field">
-          <span>Aktivität inkl. Training</span>
-          <select
-            className="input"
-            value={activity}
-            onChange={(e) => {
-              setActivity(Number(e.target.value));
-              setDirty(true);
-            }}
-          >
-            {ACTIVITY_LEVELS.map((a) => (
-              <option key={a.value} value={a.value}>
-                {a.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button className="btn block" onClick={suggest}>
-          Kalorien & Makros vorschlagen
-        </button>
-        {analysis?.actualTdee && (
-          <p className="small text-2">
-            Aus deinen Daten geschätzter Verbrauch: <strong>{fmt(analysis.actualTdee)} kcal/Tag</strong> – für deine Wunschrate wären das{' '}
-            <strong>{fmt(analysis.recommendedKcal!)} kcal</strong>.
+        {base?.configured ? (
+          <p className="tiny muted">
+            Aktivität rechne ich genau aus deinem <a href="#/plan">Alltag & Trainingsplan</a> – kein Pauschalfaktor nötig.
           </p>
+        ) : (
+          <label className="field">
+            <span>Aktivität inkl. Training</span>
+            <select
+              className="input"
+              value={activity}
+              onChange={(e) => {
+                setActivity(Number(e.target.value));
+                setDirty(true);
+              }}
+            >
+              {ACTIVITY_LEVELS.map((a) => (
+                <option key={a.value} value={a.value}>
+                  {a.label}
+                </option>
+              ))}
+            </select>
+            <span className="tiny muted">
+              Genauer wird’s mit <a href="#/plan">Alltag & Trainingsplan</a> – dann rechne ich jeden Tag einzeln.
+            </span>
+          </label>
         )}
-      </Card>
-
-      <Card title="Tagesziele Ernährung">
-        <div className="grid-2">
-          <NumField label="Kalorien" suffix="kcal" value={goals.kcal} onChange={num('kcal')} />
-          <NumField label="Protein" suffix="g" value={goals.protein} onChange={num('protein')} />
-          <NumField label="Kohlenhydrate" suffix="g" value={goals.carbs} onChange={num('carbs')} />
-          <NumField label="Fett" suffix="g" value={goals.fat} onChange={num('fat')} />
-        </div>
-        <p className={`small ${Math.abs(macroKcal - goals.kcal) > 100 ? '' : 'muted'}`}>
-          {Math.abs(macroKcal - goals.kcal) > 100 ? '⚠ ' : ''}Deine Makros ergeben {fmt(macroKcal)} kcal
-          {weight ? ` · Protein ${fmt(goals.protein / weight, 1)} g/kg` : ''}.
-        </p>
       </Card>
 
       <Card title="Körper, Schlaf & Training">
         <div className="grid-2">
-          <NumField label="Änderung" suffix="kg/Woche" value={goals.weeklyRate} onChange={num('weeklyRate')} />
+          <NumField label="Änderung" suffix="kg/Woche" value={goals.weeklyRate} onChange={changeRate} />
           <NumField
             label="Zielgewicht"
             suffix="kg"
@@ -143,8 +177,153 @@ function GoalsForm({ initialGoals, initialProfile }: { initialGoals: Goals; init
           <NumField label="Schlafziel" suffix="h" value={goals.sleepHours} onChange={num('sleepHours')} />
           <NumField label="Trainings/Woche" value={goals.trainingDays} onChange={num('trainingDays')} />
         </div>
-        <p className="tiny muted">Negative Gewichtsänderung = abnehmen (z. B. −0,5). Richtwert Defizit: 0,5–1 % des Körpergewichts pro Woche.</p>
+        <p className="tiny muted">
+          Negative Änderung = abnehmen (z. B. −0,5). {fmtSigned(goals.weeklyRate, 2)} kg/Woche = {fmtSigned(Math.round(goals.weeklyRate * KCAL_PER_KG_WEEK_PER_DAY))} kcal pro Tag
+          {auto && r ? ` → Tagesziel Ø ${fmt(r.kcal)} kcal` : goals.auto === false ? ` → Tagesziel ${fmt(goals.kcal)} kcal` : ''}.
+        </p>
       </Card>
+
+      <Card
+        title="Tagesziele"
+        action={
+          <Seg
+            value={auto ? 'auto' : 'manuell'}
+            onChange={(v) => update({ auto: v === 'auto' })}
+            label="Berechnung"
+            options={[
+              { value: 'auto', label: 'Automatisch' },
+              { value: 'manuell', label: 'Manuell' },
+            ]}
+          />
+        }
+      >
+        {auto ? (
+          preview?.auto && r ? (
+            <>
+              <div className="grid-2">
+                <Stat tile label="Kalorien Ø" value={fmt(r.kcal)} unit="kcal" />
+                <Stat tile label="Protein" value={fmt(r.protein)} unit="g" />
+                <Stat tile label="Kohlenhydrate Ø" value={fmt(r.carbs)} unit="g" />
+                <Stat tile label="Fett" value={fmt(r.fat)} unit="g" />
+              </div>
+              <div className="week-bars" aria-label="Kalorien je Wochentag">
+                {week.map((d) => (
+                  <div key={d.date} className={`week-bar ${d.date === t ? 'today' : ''}`}>
+                    <span className="tiny muted">{WEEKDAY_SHORT[d.weekday]}</span>
+                    <span className="bar" style={{ height: `${Math.round((d.targets.kcal / max) * 100)}%` }} />
+                    <span className="tiny tnum">{fmt(d.targets.kcal)}</span>
+                  </div>
+                ))}
+              </div>
+              {todayNeeds && (
+                <details className="table-view">
+                  <summary>So rechne ich heute</summary>
+                  <table className="data-table">
+                    <tbody>
+                      <tr>
+                        <td>Grundumsatz × 1,2</td>
+                        <td className="tnum">{fmt(todayNeeds.breakdown.base)} kcal</td>
+                      </tr>
+                      <tr>
+                        <td>Arbeit / Uni</td>
+                        <td className="tnum">{fmtSigned(todayNeeds.breakdown.work)} kcal</td>
+                      </tr>
+                      <tr>
+                        <td>Wege & Alltag</td>
+                        <td className="tnum">{fmtSigned(todayNeeds.breakdown.active)} kcal</td>
+                      </tr>
+                      <tr>
+                        <td>Training</td>
+                        <td className="tnum">{fmtSigned(todayNeeds.breakdown.exercise)} kcal</td>
+                      </tr>
+                      {todayNeeds.breakdown.calibration !== 0 && (
+                        <tr>
+                          <td>Kalibrierung (Essen & Gewicht)</td>
+                          <td className="tnum">{fmtSigned(todayNeeds.breakdown.calibration)} kcal</td>
+                        </tr>
+                      )}
+                      <tr>
+                        <td>Ziel ({fmtSigned(goals.weeklyRate, 2)} kg/Woche)</td>
+                        <td className="tnum">{fmtSigned(todayNeeds.breakdown.adjustment)} kcal</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Heute</strong>
+                        </td>
+                        <td className="tnum">
+                          <strong>{fmt(todayNeeds.targets.kcal)} kcal</strong>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </details>
+              )}
+              <p className="tiny muted">Passt sich automatisch an Wochenrate, Trainingsplan, Alltag und deinen gemessenen Verbrauch an.</p>
+            </>
+          ) : (
+            <p className="small text-2">Für die Automatik brauche ich Alter, Größe und dein Gewicht (unten eintragen).</p>
+          )
+        ) : (
+          <>
+            <div className="grid-2">
+              <NumField label="Kalorien Ø" suffix="kcal" value={goals.kcal} onChange={num('kcal')} />
+              <NumField label="Protein" suffix="g" value={goals.protein} onChange={num('protein')} />
+              <NumField label="Kohlenhydrate" suffix="g" value={goals.carbs} onChange={num('carbs')} />
+              <NumField label="Fett" suffix="g" value={goals.fat} onChange={num('fat')} />
+            </div>
+            <div className="row">
+              <p className="small muted grow">
+                Makros = {fmt(macroKcal)} kcal{weight ? ` · Protein ${fmt(goals.protein / weight, 1)} g/kg` : ''}
+              </p>
+              {Math.abs(macroKcal - goals.kcal) > 100 && (
+                <InfoBang title="Makros passen nicht" tone="warn">
+                  Deine Makros ergeben {fmt(macroKcal)} kcal, dein Kalorienziel ist {fmt(goals.kcal)} kcal. Passe Kohlenhydrate oder Fett an.
+                </InfoBang>
+              )}
+            </div>
+            <button className="btn block" onClick={takeOver}>
+              Berechnete Werte übernehmen
+            </button>
+            <p className="tiny muted">Dein Kalorienziel ist der Wochenschnitt – Trainingstage bekommen mehr, Ruhetage weniger.</p>
+          </>
+        )}
+      </Card>
+
+      {preview && (
+        <Card
+          title="Rahmenbedingungen"
+          action={
+            broken.length > 0 ? (
+              <InfoBang title={`${broken.length} Regel${broken.length > 1 ? 'n' : ''} verletzt`} tone="warn">
+                <ul className="bang-list">
+                  {broken.map((x) => (
+                    <li key={x.id}>
+                      <strong>{x.label}:</strong> {x.fix}
+                    </li>
+                  ))}
+                </ul>
+                Beim Speichern passe ich Ziele automatisch an die Regeln an.
+              </InfoBang>
+            ) : undefined
+          }
+        >
+          <p className="tiny muted">Das MUSS immer gelten – alles andere passt sich an deine Pläne an. Auch der KI-Coach hält sich daran.</p>
+          <ul className="rules">
+            {preview.rules.map((x) => (
+              <li key={x.id} className={x.ok ? 'ok' : 'bad'}>
+                <span className="rule-dot" aria-hidden="true">
+                  {x.ok ? '✓' : '!'}
+                </span>
+                <span className="grow">
+                  <strong className="small">{x.label}</strong>
+                  <span className="tiny muted">{x.requirement}</span>
+                </span>
+                <span className="tiny tnum">{x.current}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <StrengthGoalsCard
         goals={goals.strengthGoals}

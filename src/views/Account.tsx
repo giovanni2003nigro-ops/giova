@@ -17,6 +17,7 @@ import {
 import { clearPasswordRecovery, cloudEnabled, cloudError, passwordRecovery, readCloudConfig, saveCloudConfig, useSession } from '../cloud/client';
 import { IconCamera, IconPin } from '../components/icons';
 import { Avatar } from '../components/people';
+import { listBlocked, setBlocked } from '../cloud/posts';
 import { Card, ErrorBox, Seg, toast } from '../components/ui';
 import { setKV, useKV } from '../db';
 import { geohash } from '../lib/geo';
@@ -356,6 +357,7 @@ function ProfileForm({ existing, email }: { existing: CloudProfile | null; email
               Bisherige Aktivitäten hochladen
             </button>
           </Card>
+          <BlockedCard />
           <Card title="Konto">
             <p className="small text-2">Angemeldet als {email}</p>
             <button className="btn" onClick={() => signOut().then(() => invalidateProfile(null))}>
@@ -380,5 +382,47 @@ function ProfileForm({ existing, email }: { existing: CloudProfile | null; email
         </>
       )}
     </div>
+  );
+}
+
+/** Blockierte Personen – sehen deine Beiträge nicht und du ihre nicht. */
+function BlockedCard() {
+  const [list, setList] = useState<Awaited<ReturnType<typeof listBlocked>> | null>(null);
+  const load = () =>
+    listBlocked()
+      .then(setList)
+      .catch(() => setList([]));
+  useEffect(() => {
+    void load();
+  }, []);
+  if (!list?.length) return null;
+  return (
+    <Card title="Blockiert">
+      <div className="list">
+        {list.map((b) => (
+          <div className="list-item" key={b.blocked_id}>
+            <Avatar name={b.profiles?.display_name ?? '?'} url={b.profiles?.avatar_url} size={32} />
+            <div className="main">
+              <div className="title">{b.profiles?.display_name ?? 'Unbekannt'}</div>
+              <div className="meta">@{b.profiles?.username}</div>
+            </div>
+            <button
+              className="btn small"
+              onClick={async () => {
+                try {
+                  await setBlocked(b.blocked_id, false);
+                  toast('Blockierung aufgehoben');
+                  void load();
+                } catch (err) {
+                  toast(cloudError(err));
+                }
+              }}
+            >
+              Aufheben
+            </button>
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }

@@ -3,7 +3,10 @@ import { getFeed, getProfileSummary, setFollow, setKudo, useCloudQuery, useMyPro
 import { cloudEnabled, cloudError } from '../cloud/client';
 import { ActivityCard, fromFeed } from '../components/activity';
 import { Avatar, TierBadge } from '../components/people';
-import { Card, ErrorBox, toast } from '../components/ui';
+import { PostCard } from '../components/posts';
+import { Card, ErrorBox, Seg, Sheet, toast } from '../components/ui';
+import { getPosts, setBlocked, type PostRow } from '../cloud/posts';
+import { mediaUrl } from '../cloud/api';
 import { MEDAL_BY_KEY } from '../lib/medals';
 import { SPORT_DEFS } from '../lib/sports';
 import { fmt } from '../lib/stats';
@@ -13,11 +16,15 @@ export function AthleteView({ id }: { id?: string }) {
   const { profile: me } = useMyProfile();
   const summary = useCloudQuery(id && cloudEnabled ? () => getProfileSummary(id) : null, [id]);
   const [items, setItems] = useState<FeedItem[]>([]);
+  const [posts, setPosts] = useState<PostRow[]>([]);
+  const [tab, setTab] = useState<'aktivitaeten' | 'beitraege'>('aktivitaeten');
+  const [open, setOpen] = useState<PostRow | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!id || !cloudEnabled) return;
     getFeed('user', undefined, id, 30).then(setItems).catch(() => setItems([]));
+    getPosts('user', undefined, id, 50).then(setPosts).catch(() => setPosts([]));
   }, [id]);
 
   if (!cloudEnabled) return <div className="content empty">Kein Community-Server eingerichtet.</div>;
@@ -58,9 +65,28 @@ export function AthleteView({ id }: { id?: string }) {
         </div>
         {s.profile.bio && <p className="small text-2">{s.profile.bio}</p>}
         {!isMe && me && (
-          <button className={`btn ${s.is_following ? '' : 'primary'}`} onClick={follow} disabled={busy}>
-            {s.is_following ? 'Entfolgen' : 'Folgen'}
-          </button>
+          <div className="grid-2">
+            <button className={`btn ${s.is_following ? '' : 'primary'}`} onClick={follow} disabled={busy}>
+              {s.is_following ? 'Entfolgen' : 'Folgen'}
+            </button>
+            <button
+              className="btn"
+              disabled={busy}
+              onClick={async () => {
+                if (!confirm(`${s.profile.display_name} blockieren? Ihr seht gegenseitig keine Beiträge mehr und folgt euch nicht mehr. Aufheben unter Konto.`)) return;
+                try {
+                  await setBlocked(s.profile.id, true);
+                  toast(`${s.profile.display_name} blockiert`);
+                  setPosts([]);
+                  summary.reload();
+                } catch (err) {
+                  toast(cloudError(err));
+                }
+              }}
+            >
+              Blockieren
+            </button>
+          </div>
         )}
         <div className="grid-2">
           <div className="stat stat-tile">
@@ -92,7 +118,47 @@ export function AthleteView({ id }: { id?: string }) {
           </div>
         )}
       </Card>
-      {items.map((it) => (
+      <Seg
+        label="Inhalte"
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: 'aktivitaeten', label: `Aktivitäten (${items.length})` },
+          { value: 'beitraege', label: `Beiträge (${posts.length})` },
+        ]}
+      />
+      {tab === 'beitraege' && (
+        <>
+          {posts.length > 0 ? (
+            <div className="post-grid">
+              {posts.map((p) => (
+                <button key={p.id} onClick={() => setOpen(p)} aria-label={p.caption ?? 'Beitrag öffnen'}>
+                  <img src={mediaUrl(p.thumb_path ?? p.media_path)} alt="" loading="lazy" />
+                  {p.duration_s ? <span className="post-duration">▶ {Math.round(p.duration_s)} s</span> : null}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="empty">Noch keine Beiträge.</div>
+          )}
+          {open && (
+            <Sheet title="Beitrag" onClose={() => setOpen(null)}>
+              <PostCard
+                post={open}
+                onChange={(p) => {
+                  setOpen(p);
+                  setPosts((xs) => xs.map((x) => (x.id === p.id ? p : x)));
+                }}
+                onRemove={() => {
+                  setPosts((xs) => xs.filter((x) => x.id !== open.id));
+                  setOpen(null);
+                }}
+              />
+            </Sheet>
+          )}
+        </>
+      )}
+      {tab === 'aktivitaeten' && items.map((it) => (
         <ActivityCard
           key={it.id}
           a={fromFeed(it)}
@@ -103,7 +169,7 @@ export function AthleteView({ id }: { id?: string }) {
           }}
         />
       ))}
-      {items.length === 0 && <div className="empty">Keine sichtbaren Aktivitäten.</div>}
+      {tab === 'aktivitaeten' && items.length === 0 && <div className="empty">Keine sichtbaren Aktivitäten.</div>}
     </div>
   );
 }

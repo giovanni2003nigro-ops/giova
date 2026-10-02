@@ -5,7 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { ActivityCard, fromLocal } from '../components/activity';
 import { IconCamera, IconDumbbell, IconMoon, IconRecord, IconSparkle } from '../components/icons';
 import { Markdown } from '../components/Markdown';
-import { Card, ErrorBox, Meter, RecommendationItem, Stat } from '../components/ui';
+import { Card, ErrorBox, Meter, Stat } from '../components/ui';
 import { db, useKV } from '../db';
 import { navigate, useAnalysis, useApiKey, useAppData, useToday } from '../hooks';
 import { addDays, formatDateLong, formatDuration, weekStart } from '../lib/dates';
@@ -22,7 +22,6 @@ export function DashboardView() {
   const t = useToday();
   const data = useAppData();
   const analysis = useAnalysis(data);
-  const [showOk, setShowOk] = useState(false);
   const needs = useDayNeeds(t);
   const activities = useLiveQuery(() => db.activities.where('date').aboveOrEqual(addDays(t, -40)).toArray(), [t]);
   const seasonMedalPts = useLiveQuery(() => db.medals.filter((m) => m.date.startsWith(seasonOf(t))).toArray(), [t]);
@@ -50,7 +49,7 @@ export function DashboardView() {
       <div>
         <div className="small muted">{formatDateLong(t)}</div>
         <h1>
-          Ziel: {GOAL_SHORT[g.type]} · {fmt(g.kcal)} kcal · {fmt(g.protein)} g Protein
+          Ziel: {GOAL_SHORT[g.type]} · Ø {fmt(g.kcal)} kcal · {fmt(g.protein)} g Protein
         </h1>
       </div>
 
@@ -95,6 +94,8 @@ export function DashboardView() {
               {problems.filter((p) => p.severity === 'warn' || p.severity === 'alert').length} Abweichungen
               <br />
               {good.length} Ziele im Plan
+              <br />
+              <span className="tiny">Details hinter dem (!) oben</span>
             </span>
           </div>
           <div className="chips">
@@ -166,22 +167,6 @@ export function DashboardView() {
         {week[0] && <ActivityCard a={fromLocal(week[0])} />}
       </Card>
 
-      <div className="section-title">Zielabgleich & Empfehlungen</div>
-      <Card>
-        {problems.map((r) => (
-          <RecommendationItem key={r.id} rec={r} />
-        ))}
-        {problems.length === 0 && <p className="small text-2">Keine Abweichungen – alles im Plan. 💪</p>}
-        {good.length > 0 && (
-          <>
-            <button className="btn ghost small" onClick={() => setShowOk((v) => !v)} style={{ alignSelf: 'flex-start' }}>
-              {showOk ? 'Ausblenden' : `Was gut läuft (${good.length})`}
-            </button>
-            {showOk && good.map((r) => <RecommendationItem key={r.id} rec={r} />)}
-          </>
-        )}
-      </Card>
-
       {analysis.trends.length > 0 && (
         <Card title="Kraftentwicklung" action={<a className="small" href="#/training">Details</a>}>
           <div className="list">
@@ -194,19 +179,6 @@ export function DashboardView() {
               </div>
             ))}
           </div>
-        </Card>
-      )}
-
-      {analysis.insights.length > 0 && (
-        <Card title="Zusammenhänge">
-          {analysis.insights.map((i) => (
-            <div key={i.id} className="hint-box">
-              <strong>{i.title}</strong>
-              <div>{i.detail}</div>
-              <div style={{ marginTop: 4 }}>→ {i.conclusion}</div>
-            </div>
-          ))}
-          <p className="tiny muted">Vergleich jeder Einheit mit der vorherigen Einheit derselben Übung. Aussagekräftiger, je mehr Daten du einträgst.</p>
         </Card>
       )}
 

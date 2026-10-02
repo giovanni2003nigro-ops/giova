@@ -136,6 +136,11 @@ export interface StrengthGoal {
 
 export interface Goals {
   type: GoalType;
+  /**
+   * Kalorien & Makros automatisch aus Profil, Gewicht, Alltag, Trainingsplan und Wochenrate
+   * berechnen. Standard: an (fehlt das Feld, gilt es als an).
+   */
+  auto?: boolean;
   kcal: number;
   protein: number;
   carbs: number;

@@ -73,6 +73,12 @@ export function Meter({
 }
 
 export function Stat({ label, value, unit, delta, tile = false }: { label: string; value: ReactNode; unit?: string; delta?: ReactNode; tile?: boolean }) {
+  // „7,76 km“ → große Zahl, kleine Einheit (passt auch bei breiten Schriften in die Kachel)
+  const split = !unit && typeof value === 'string' ? /^([+−-]?[\d.,:]+)\s(\S.{0,8})$/.exec(value) : null;
+  if (split) {
+    value = split[1];
+    unit = split[2];
+  }
   return (
     <div className={`stat ${tile ? 'stat-tile' : ''}`}>
       <span className="label">{label}</span>

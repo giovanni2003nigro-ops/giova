@@ -1,3 +1,4 @@
+import { InfoBang } from './InfoBang';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useRef, useState } from 'react';
 import { errorMessage } from '../ai/client';
@@ -8,7 +9,7 @@ import { mealTypeAt, type DayNeeds } from '../lib/dailyNeeds';
 import { today as getToday } from '../lib/dates';
 import { sumMacros } from '../lib/nutrition';
 import { SPORT_DEFS } from '../lib/sports';
-import { fmt } from '../lib/stats';
+import { fmt, fmtSigned } from '../lib/stats';
 import { DEFAULT_PREFS } from '../needs';
 import type { MealEntry, NutritionPreferences, PlannedMeal } from '../types';
 import { INTENSITY_LABELS, MEAL_LABELS } from '../types';
@@ -79,7 +80,25 @@ export function DayPlanCard({ date, needs }: { date: string; needs: DayNeeds & {
           <h2>Dein Bedarf {isToday ? 'heute' : 'an diesem Tag'}</h2>
         </div>
       }
-      action={<a className="small" href="#/plan">Plan & Alltag</a>}
+      action={
+        <div className="row">
+          {(needs.notes.length > 0 || !needs.configured) && (
+            <InfoBang title="Hinweise für diesen Tag" count={needs.notes.length + (needs.configured ? 0 : 1)}>
+              {needs.notes.map((n) => (
+                <p key={n}>{n}</p>
+              ))}
+              {!needs.configured && (
+                <p>
+                  Hinterlege deinen <a href="#/plan">Trainingsplan und Alltag</a> (Arbeit, Uni, Wege) – dann passt sich der Bedarf jedem Tag genau an.
+                </p>
+              )}
+            </InfoBang>
+          )}
+          <a className="small" href="#/plan">
+            Plan & Alltag
+          </a>
+        </div>
+      }
     >
       <div className="row between wrap tnum">
         <span className="hero" style={{ fontSize: '2rem' }}>
@@ -109,38 +128,38 @@ export function DayPlanCard({ date, needs }: { date: string; needs: DayNeeds & {
           </span>
         )}
       </div>
-      {needs.notes.map((n) => (
-        <p key={n} className="small text-2">
-          {n}
-        </p>
-      ))}
-      {!needs.configured && (
-        <div className="hint-box">
-          Hinterlege deinen <a href="#/plan">Trainingsplan und Alltag</a> (Arbeit, Uni, Wege) – dann passt sich der Bedarf jedem Tag an.
-        </div>
-      )}
       <details className="table-view">
         <summary>Wie berechnet?</summary>
         <table className="data-table">
           <tbody>
             {needs.estimatedTdee != null && (
               <tr>
-                <td>Grundbedarf (Grundumsatz × 1,2)</td>
+                <td>{needs.configured ? 'Grundbedarf (Grundumsatz × 1,2)' : 'Grundumsatz × Aktivitätsfaktor (pauschal)'}</td>
                 <td>{fmt(b.base)} kcal</td>
               </tr>
             )}
-            <tr>
-              <td>Arbeit / Uni</td>
-              <td>+{fmt(b.work)} kcal</td>
-            </tr>
-            <tr>
-              <td>Wege zu Fuß / Rad</td>
-              <td>+{fmt(b.active)} kcal</td>
-            </tr>
-            <tr>
-              <td>Training</td>
-              <td>+{fmt(b.exercise)} kcal</td>
-            </tr>
+            {needs.configured && (
+              <>
+                <tr>
+                  <td>Arbeit / Uni</td>
+                  <td>+{fmt(b.work)} kcal</td>
+                </tr>
+                <tr>
+                  <td>Wege zu Fuß / Rad</td>
+                  <td>+{fmt(b.active)} kcal</td>
+                </tr>
+                <tr>
+                  <td>Training</td>
+                  <td>+{fmt(b.exercise)} kcal</td>
+                </tr>
+              </>
+            )}
+            {b.calibration !== 0 && (
+              <tr>
+                <td>Kalibrierung (gemessen aus Essen & Gewicht)</td>
+                <td>{fmtSigned(b.calibration)} kcal</td>
+              </tr>
+            )}
             {needs.estimatedTdee != null && (
               <tr>
                 <td>Geschätzter Verbrauch</td>
@@ -154,8 +173,9 @@ export function DayPlanCard({ date, needs }: { date: string; needs: DayNeeds & {
           </tbody>
         </table>
         <p className="tiny muted">
-          Dein Kalorienziel aus „Ziele“ ist der Wochenschnitt. Jeder Tag weicht um seine Mehr- oder Minderbelastung davon ab; Protein und Fett bleiben gleich,
-          Kohlenhydrate gleichen aus.
+          {needs.auto
+            ? 'Automatisch: Verbrauch dieses Tages + Zielanpassung – jeder Tag bekommt genau seinen Mehr- oder Minderbedarf. Protein und Fett bleiben gleich, Kohlenhydrate gleichen aus. Nie unter deinem Grundumsatz.'
+            : 'Manuell: Dein Kalorienziel aus „Ziele“ ist der Wochenschnitt. Jeder Tag weicht genau um seine Mehr- oder Minderbelastung davon ab; Protein und Fett bleiben gleich, Kohlenhydrate gleichen aus.'}
         </p>
       </details>
 

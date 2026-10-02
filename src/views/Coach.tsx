@@ -9,7 +9,7 @@ import { IconClose, IconImage, IconPlus, IconSend, IconStop, IconTrash } from '.
 import { Markdown } from '../components/Markdown';
 import { Card, ErrorBox, Sheet } from '../components/ui';
 import { db, setKV, useKV } from '../db';
-import { navigate, useApiKey, useObjectUrl } from '../hooks';
+import { navigate, useApiKey, useObjectUrl, type Route, type RouteName } from '../hooks';
 import { today } from '../lib/dates';
 import { blobToBase64, compressImage } from '../lib/image';
 import type { ChatRecord } from '../types';
@@ -22,7 +22,73 @@ const SUGGESTIONS = [
   'Trag mir 200 g Hähnchenbrust und 150 g gekochten Reis zum Mittagessen ein.',
 ];
 
+/** Seiten mit Coach – Social Media (Feed, Beiträge, Profile) und Ranglisten bleiben außen vor. */
+export const COACH_PAGES: Partial<Record<RouteName, { label: string; suggestions: string[] }>> = {
+  heute: {
+    label: 'Übersicht',
+    suggestions: ['Wie war meine Woche? Was soll ich als Nächstes ändern?', 'Was esse ich heute noch, um meine Makros zu treffen?', 'Bin ich auf Kurs zu meinem Ziel?'],
+  },
+  essen: {
+    label: 'Ernährung',
+    suggestions: [
+      'Was kann ich heute noch essen? Mach mir ein Rezept aus meinen Lebensmitteln.',
+      'Trag mir 200 g Hähnchenbrust und 150 g gekochten Reis zum Mittagessen ein.',
+      'Ich esse ab jetzt vegetarisch – pass meine Vorlieben an.',
+    ],
+  },
+  training: {
+    label: 'Krafttraining',
+    suggestions: ['Wie soll ich heute steigern?', 'Trag 3 Sätze Kniebeuge 5 × 120 kg ein.', 'Wo stagniere ich und was soll ich ändern?'],
+  },
+  aufzeichnen: {
+    label: 'Aufzeichnen',
+    suggestions: ['Trag einen 10-km-Lauf von heute in 52 Minuten ein.', 'Bewerte meine letzten Läufe – wie verbessere ich meine Pace?'],
+  },
+  tracker: { label: 'Live-Tracker', suggestions: ['Welches Tempo soll ich heute laufen?', 'Wie wärme ich mich vor Intervallen richtig auf?'] },
+  import: { label: 'Import', suggestions: ['Wie importiere ich Läufe von meiner Garmin-Uhr?'] },
+  aktivitaet: { label: 'Aktivität', suggestions: ['Wie bewertest du diese Einheit?', 'Was soll ich nach dieser Einheit essen?'] },
+  schlaf: {
+    label: 'Schlaf',
+    suggestions: ['Trag ein: gestern 23:30 ins Bett, 7:00 aufgestanden, Qualität 4.', 'Wie verbessere ich meinen Schlaf vor Wettkämpfen?'],
+  },
+  ziele: {
+    label: 'Ziele & Körper',
+    suggestions: ['Ich will 0,5 kg pro Woche abnehmen – stell das ein.', 'Passen meine Ziele zu den Rahmenbedingungen?', 'Trag mein Gewicht ein: 81,2 kg.'],
+  },
+  plan: {
+    label: 'Plan & Alltag',
+    suggestions: [
+      'Ich habe ab nächster Woche Uni Mo–Do 8–16 Uhr – pass meinen Alltag an.',
+      'Füge Dienstag 18 Uhr lockeres Laufen 45 min hinzu.',
+      'Bau mir einen Hyrox-Plan mit 5 Einheiten pro Woche.',
+    ],
+  },
+  profil: { label: 'Profil', suggestions: ['Fass meinen Monat zusammen.', 'Welche Medaille kann ich als Nächstes holen?'] },
+  einstellungen: { label: 'Einstellungen', suggestions: ['Was kannst du alles für mich tun?'] },
+  coach: { label: 'KI-Coach', suggestions: SUGGESTIONS },
+};
+
+/** Markiert den Seiten-Kontext in Nachrichten – wird im Verlauf nicht angezeigt. */
+const CONTEXT_MARK = '⟨Kontext⟩';
+
 export function CoachView() {
+  return <CoachChat route={{ name: 'coach' }} />;
+}
+
+/** Coach als Overlay auf jeder erlaubten Seite. */
+export function CoachSheet({ route, onClose }: { route: Route; onClose: () => void }) {
+  return (
+    <div className="sheet-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="sheet coach-sheet" role="dialog" aria-modal="true" aria-label="KI-Coach">
+        <div className="sheet-grip" />
+        <CoachChat route={route} onClose={onClose} />
+      </div>
+    </div>
+  );
+}
+
+function CoachChat({ route, onClose }: { route: Route; onClose?: () => void }) {
+  const page = COACH_PAGES[route.name] ?? COACH_PAGES.coach!;
   const apiKey = useApiKey();
   const activeId = useKV<number | null>('activeChat', null);
   const chat = useLiveQuery(async () => (activeId ? await db.chats.get(activeId) : undefined), [activeId]);
@@ -40,6 +106,12 @@ export function CoachView() {
 
   useEffect(() => () => abortRef.current?.abort(), []);
   useEffect(() => {
+    if (!onClose) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [chat?.messages.length, streaming, liveTools.length, busy]);
 
@@ -54,7 +126,13 @@ export function CoachView() {
             Nährwert-Kombinationen aus deiner Bibliothek und kann Mahlzeiten direkt eintragen.
           </p>
           <p className="small text-2">Dafür brauchst du einen API-Schlüssel von console.anthropic.com.</p>
-          <button className="btn primary" onClick={() => navigate('einstellungen')}>
+          <button
+            className="btn primary"
+            onClick={() => {
+              onClose?.();
+              navigate('einstellungen');
+            }}
+          >
             API-Schlüssel hinterlegen
           </button>
         </Card>
@@ -109,12 +187,12 @@ export function CoachView() {
       record = { ...fresh, id };
     }
     const prompt = msg || 'Was siehst du auf dem Foto? Schätze die Nährwerte.';
-    const content: string | BetaContentBlockParam[] = image
-      ? [
-          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: await blobToBase64(image) } },
-          { type: 'text', text: prompt },
-        ]
-      : prompt;
+    const where = `${CONTEXT_MARK} Nutzer ist gerade auf der Seite „${page.label}“${route.id ? ` (ID ${route.id})` : ''}, ${new Date().toLocaleString('de-DE', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}.`;
+    const content: BetaContentBlockParam[] = [
+      { type: 'text', text: where },
+      ...(image ? [{ type: 'image' as const, source: { type: 'base64' as const, media_type: 'image/jpeg' as const, data: await blobToBase64(image) } }] : []),
+      { type: 'text', text: prompt },
+    ];
     const messages: BetaMessageParam[] = [...record.messages, { role: 'user', content }];
     const updated = { ...record, messages, updatedAt: Date.now() };
     await db.chats.update(record.id!, { messages, updatedAt: updated.updatedAt });
@@ -132,26 +210,33 @@ export function CoachView() {
   const lastIsUser = chat && chat.messages.length > 0 && chat.messages[chat.messages.length - 1].role === 'user';
 
   return (
-    <div className="coach">
-      <div className="row between" style={{ padding: '12px 16px 0' }}>
+    <div className={`coach ${onClose ? 'in-sheet' : ''}`}>
+      <div className="row between coach-head">
         <button className="btn small" onClick={() => setShowHistory(true)}>
           Verlauf
         </button>
-        <span className="tiny muted">KI-Coach</span>
-        <button className="btn small" onClick={newChat} disabled={!chat}>
-          <IconPlus /> Neuer Chat
-        </button>
+        <span className="tiny muted">Coach · {page.label}</span>
+        <div className="row" style={{ gap: 4 }}>
+          <button className="btn small" onClick={newChat} disabled={!chat} aria-label="Neuer Chat">
+            <IconPlus /> Neu
+          </button>
+          {onClose && (
+            <button className="icon-btn" onClick={onClose} aria-label="Coach schließen">
+              <IconClose />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="chat">
         {!chat && (
           <div className="stack lg" style={{ marginTop: 8 }}>
             <p className="text-2 small">
-              Frag mich alles zu Training, Ernährung und Schlaf. Ich kenne deine Ziele und Daten, rechne Nährwert-Kombinationen exakt aus und kann
-              Mahlzeiten für dich eintragen.
+              Frag mich alles zu Training, Ernährung, Schlaf und Alltag. Ich kenne deine Ziele und Daten, rechne exakt und kann Mahlzeiten, Aktivitäten,
+              Ziele, Plan und Alltag direkt für dich ändern – immer innerhalb deiner Rahmenbedingungen.
             </p>
-            {SUGGESTIONS.map((s) => (
-              <button key={s} className="chip" style={{ textAlign: 'left', borderRadius: 12, padding: '10px 12px' }} onClick={() => send(s)}>
+            {page.suggestions.map((s) => (
+              <button key={s} className="chip" style={{ textAlign: 'left', borderRadius: 12, padding: '10px 12px', whiteSpace: 'normal', height: 'auto' }} onClick={() => send(s)}>
                 {s}
               </button>
             ))}
@@ -219,7 +304,7 @@ export function CoachView() {
             className="input"
             rows={1}
             value={text}
-            placeholder="Nachricht an deinen Coach …"
+            placeholder="Frag deinen Coach …"
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey && !('ontouchstart' in window)) {
@@ -250,7 +335,10 @@ function renderMessages(messages: BetaMessageParam[]): ReactNode[] {
   messages.forEach((m, i) => {
     const blocks = typeof m.content === 'string' ? [{ type: 'text' as const, text: m.content }] : m.content;
     if (m.role === 'user') {
-      const texts = blocks.filter((b) => b.type === 'text').map((b) => (b as { text: string }).text);
+      const texts = blocks
+        .filter((b) => b.type === 'text')
+        .map((b) => (b as { text: string }).text)
+        .filter((t) => !t.startsWith(CONTEXT_MARK));
       const images = blocks.filter((b) => b.type === 'image');
       if (!texts.length && !images.length) return; // reine Werkzeug-Ergebnisse
       out.push(

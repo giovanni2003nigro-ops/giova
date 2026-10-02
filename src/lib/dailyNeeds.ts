@@ -15,14 +15,18 @@ import type {
 } from '../types';
 import { addDays, minutesToTime, parseISODate, timeToMinutes, weekStart } from './dates';
 import { bmr, KCAL_PER_KG_WEEK_PER_DAY } from './goals';
+import { limits } from './guardrails';
 import { SPORT_DEFS } from './sports';
 
 /**
  * Tagesbedarf: Wie viel Energie und welche Makros brauchst du an einem bestimmten Tag –
  * abhängig von Training (Plan oder schon absolviert), Alltag (Arbeit, Uni, Wege) und Ziel.
  *
- * Der Wochenschnitt bleibt dein Kalorienziel aus „Ziele“; Tage mit mehr Belastung bekommen mehr,
- * Ruhetage weniger. Protein und Fett bleiben konstant, die Kohlenhydrate gleichen aus.
+ * Automatisch (Profil + Gewicht vorhanden): Verbrauch des Tages = Grundumsatz × 1,2 + Arbeit/Uni
+ * + Wege + Training, kalibriert mit dem aus Essen & Gewichtsverlauf gemessenen Verbrauch,
+ * plus/minus die Wochenrate des Ziels. Jeder Tag bekommt genau seinen Mehr- oder Minderbedarf.
+ * Manuell: Das eingetragene Kalorienziel ist der Wochenschnitt, die Tage weichen um ihre Belastung ab.
+ * Protein und Fett bleiben konstant, die Kohlenhydrate gleichen aus. Nie unter den Rahmenbedingungen.
  */
 
 export const DEFAULT_DAY: ScheduleDay = { kind: 'buero', start: '09:00', end: '17:00', wake: '07:00', sleep: '23:00', activeMinutes: 20, canCook: false };
@@ -87,7 +91,9 @@ export interface DayNeeds {
   done: Activity[];
   /** Absolute Schätzung des Verbrauchs (ohne Zielanpassung) – nur mit Profil */
   estimatedTdee: number | null;
-  breakdown: { base: number; work: number; active: number; exercise: number; adjustment: number };
+  breakdown: { base: number; work: number; active: number; exercise: number; calibration: number; adjustment: number };
+  /** Automatisch aus Profil & Verbrauch berechnet (sonst: manuelles Ziel als Wochenschnitt) */
+  auto: boolean;
   targets: Macros;
   /** Abweichung ggü. dem durchschnittlichen Tagesziel */
   delta: number;
@@ -103,7 +109,17 @@ export interface NeedsInput {
   plan: TrainingPlan | null;
   activities: Activity[];
   mealsPerDay?: number;
+  /** Aus Essen & Gewichtsverlauf gemessener Verbrauch (kcal/Tag) – kalibriert das Modell */
+  measuredTdee?: number | null;
+  /**
+   * Alltag/Trainingsplan hinterlegt? Wenn nicht, rechnet das Modell mit dem pauschalen
+   * Aktivitätsfaktor aus dem Profil (enthält das Training schon). Standard: true.
+   */
+  detailed?: boolean;
 }
+
+/** Automatische Berechnung aktiv? (Standard an, sobald Profil & Gewicht da sind) */
+export const isAuto = (input: Pick<NeedsInput, 'goals' | 'profile' | 'weight'>) => input.goals.auto !== false && !!input.profile && !!input.weight;
 
 interface Load {
   base: number;
@@ -115,14 +131,19 @@ interface Load {
 function dayLoad(date: ISODate, input: NeedsInput, kg: number): Load & { sessions: PlannedSession[]; done: Activity[] } {
   const wd = weekdayOf(date);
   const day = input.schedule[wd] ?? DEFAULT_DAY;
-  const base = input.profile && input.weight ? bmr(input.profile, input.weight) * 1.2 : 0;
-  const work = day.kind === 'frei' ? 0 : (WORK_MET[day.kind] - BASE_MET) * kg * hours(day.start, day.end);
-  const active = (day.activeMinutes / 60) * (3.5 - BASE_MET) * kg;
   const done = input.activities.filter((a) => a.date === date && a.points > 0);
   const planned = (input.plan?.sessions ?? []).filter((s) => s.weekday === wd);
   // Absolvierte Einheiten ersetzen geplante derselben Sportart
   const doneSports = new Set(done.map((a) => a.sport));
   const sessions = planned.filter((s) => !doneSports.has(s.sport));
+  if (input.detailed === false) {
+    // Ohne Alltag & Plan: pauschaler Aktivitätsfaktor (inkl. Training) für jeden Tag gleich
+    const base = input.profile && input.weight ? bmr(input.profile, input.weight) * input.profile.activity : 0;
+    return { base, work: 0, active: 0, exercise: 0, sessions, done };
+  }
+  const base = input.profile && input.weight ? bmr(input.profile, input.weight) * 1.2 : 0;
+  const work = day.kind === 'frei' ? 0 : (WORK_MET[day.kind] - BASE_MET) * kg * hours(day.start, day.end);
+  const active = (day.activeMinutes / 60) * (3.5 - BASE_MET) * kg;
   const exercise = done.reduce((s, a) => s + activityExtraKcal(a, kg), 0) + sessions.reduce((s, x) => s + sessionKcal(x, kg), 0);
   return { base, work, active, exercise, sessions, done };
 }
@@ -180,33 +201,41 @@ export function mealSlots(day: ScheduleDay, sessions: PlannedSession[], mealsPer
     }));
 }
 
-/** Bedarf eines Tages – der Wochenschnitt entspricht dem Kalorienziel. */
+/** Bedarf eines Tages – genau nach Belastung, nie unter den Rahmenbedingungen. */
 export function dayNeeds(date: ISODate, input: NeedsInput): DayNeeds {
   const kg = input.weight ?? 75;
   const week = Array.from({ length: 7 }, (_, i) => addDays(weekStart(date), i));
   const loads = week.map((d) => dayLoad(d, input, kg));
-  const variable = (l: Load) => l.work + l.active + l.exercise;
-  const avgVar = loads.reduce((s, l) => s + variable(l), 0) / 7;
+  const total = (l: Load) => l.base + l.work + l.active + l.exercise;
   const today = loads[week.indexOf(date)] ?? dayLoad(date, input, kg);
   const g = input.goals;
-  // Ausschläge begrenzen (Ruhetag ≥ −15 %, harter Tag ≤ +30 % des Ziels) – gleichmäßig skaliert,
-  // damit der Wochenschnitt erhalten bleibt
-  const deltas = loads.map((l) => variable(l) - avgVar);
-  const lo = Math.min(...deltas);
-  const hi = Math.max(...deltas);
-  const scale = Math.min(1, lo < 0 ? (0.15 * g.kcal) / -lo : 1, hi > 0 ? (0.3 * g.kcal) / hi : 1);
-  const delta = (variable(today) - avgVar) * scale;
-  const kcal = round10(Math.max(1200, g.kcal + delta));
+  const adjustment = g.weeklyRate * KCAL_PER_KG_WEEK_PER_DAY;
+  const avgTotal = loads.reduce((s, l) => s + total(l), 0) / 7;
+  const auto = isAuto(input);
+  let calibration = 0;
+  let raw: number;
+  if (auto) {
+    // Modell an den gemessenen Verbrauch angleichen (höchstens ±400 kcal)
+    if (input.measuredTdee) calibration = Math.max(-400, Math.min(400, input.measuredTdee - avgTotal));
+    raw = total(today) + calibration + adjustment;
+  } else {
+    raw = g.kcal + (total(today) - avgTotal);
+  }
+  const lim = limits(input.profile, input.weight);
+  const kcal = round10(Math.max(lim.minKcal, raw));
   const protein = g.protein;
   const fat = Math.max(g.fat, Math.round(kg * 0.6));
   const carbs = Math.max(50, Math.round((kcal - protein * 4 - fat * 9) / 4));
-  const adjustment = g.weeklyRate * KCAL_PER_KG_WEEK_PER_DAY;
-  const estimatedTdee = today.base ? Math.round(today.base + variable(today)) : null;
+  // Abweichung ggü. dem Wochenschnitt der Tagesziele
+  const avgTarget = auto ? avgTotal + calibration + adjustment : g.kcal;
+  const delta = kcal - Math.max(lim.minKcal, avgTarget);
+  const estimatedTdee = today.base ? Math.round(total(today) + calibration) : null;
   const wd = weekdayOf(date);
   const day = input.schedule[wd] ?? DEFAULT_DAY;
   const notes: string[] = [];
   if (Math.abs(delta) >= 100)
     notes.push(delta > 0 ? `+${Math.round(delta)} kcal ggü. deinem Schnitt – mehr Belastung als an anderen Tagen, vor allem als Kohlenhydrate.` : `${Math.round(delta)} kcal ggü. deinem Schnitt – ruhigerer Tag, weniger Kohlenhydrate.`);
+  if (raw < lim.minKcal) notes.push(`Auf ${lim.minKcal} kcal angehoben – weniger wäre unter deinem Grundumsatz (Rahmenbedingung).`);
   if (today.sessions.some((s) => s.intensity === 'hart')) notes.push('Harte Einheit geplant: Kohlenhydrate vorher auffüllen, danach 30–40 g Protein.');
   if (day.kind !== 'frei' && !day.canCook) notes.push('Keine Küche während der Arbeit/Uni: Mittagessen am Vorabend vorbereiten.');
   return {
@@ -216,7 +245,15 @@ export function dayNeeds(date: ISODate, input: NeedsInput): DayNeeds {
     sessions: today.sessions,
     done: today.done,
     estimatedTdee,
-    breakdown: { base: Math.round(today.base), work: Math.round(today.work), active: Math.round(today.active), exercise: Math.round(today.exercise), adjustment: Math.round(adjustment) },
+    breakdown: {
+      base: Math.round(today.base),
+      work: Math.round(today.work),
+      active: Math.round(today.active),
+      exercise: Math.round(today.exercise),
+      calibration: Math.round(calibration),
+      adjustment: Math.round(adjustment),
+    },
+    auto,
     targets: { kcal, protein, carbs, fat },
     delta: Math.round(delta),
     slots: mealSlots(day, today.sessions, input.mealsPerDay ?? 4),
