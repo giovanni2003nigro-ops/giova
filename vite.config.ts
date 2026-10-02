@@ -18,15 +18,15 @@ export default defineConfig({
         short_name: 'Giova Fit',
         description: 'Laufen, Hyrox, Schwimmen, Gym & Co. aufzeichnen, in Ligen antreten und mit KI-Ernährungsplan trainieren',
         lang: 'de',
-        theme_color: '#1a1a19',
-        background_color: '#0d0d0d',
+        theme_color: '#0a0a0b',
+        background_color: '#0a0a0b',
         display: 'standalone',
         start_url: base,
         scope: base,
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {

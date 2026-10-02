@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { addComment, deleteComment, getPost, listComments, listKudos, setKudo, useCloudQuery, useMyProfile } from '../cloud/api';
 import { cloudEnabled, cloudError } from '../cloud/client';
 import { activityStats, fromFeed, whenLabel } from '../components/activity';
-import { IconComment, IconHeart, IconSend, IconTrash } from '../components/icons';
+import { IconComment, IconHeart, IconSend, IconShare, IconTrash } from '../components/icons';
 import { Avatar } from '../components/people';
 import { RouteMap } from '../components/RouteMap';
+import { StorySheet } from '../components/StorySheet';
 import { Card, ErrorBox, Stat, toast } from '../components/ui';
 import { SPORT_DEFS } from '../lib/sports';
 import { fmt } from '../lib/stats';
@@ -17,6 +18,7 @@ export function PostView({ id }: { id?: string }) {
   const kudos = useCloudQuery(id && cloudEnabled ? () => listKudos(id) : null, [id]);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
+  const [story, setStory] = useState<{ photo?: Blob } | null>(null);
 
   if (!cloudEnabled) return <div className="content empty">Kein Community-Server eingerichtet.</div>;
   if (post.error) return <div className="content"><ErrorBox>{cloudError({ message: post.error })}</ErrorBox></div>;
@@ -89,6 +91,20 @@ export function PostView({ id }: { id?: string }) {
         )}
       </Card>
       {card.photoUrl && <img src={card.photoUrl} alt="Foto zur Aktivität" className="photo-full" />}
+
+      {profile?.id === p.user_id && (
+        <button
+          className="btn primary block"
+          onClick={async () => {
+            // Foto für den Story-Hintergrund laden (öffentlicher Speicher)
+            const photo = card.photoUrl ? await fetch(card.photoUrl).then((r) => (r.ok ? r.blob() : undefined)).catch(() => undefined) : undefined;
+            setStory({ photo });
+          }}
+        >
+          <IconShare /> Als Story teilen
+        </button>
+      )}
+      {story && <StorySheet activity={card} photo={story.photo} onClose={() => setStory(null)} />}
 
       <div className="row">
         <button className={`btn kudo ${p.has_kudo ? 'on' : ''}`} onClick={toggleKudo} disabled={!profile} aria-pressed={p.has_kudo}>

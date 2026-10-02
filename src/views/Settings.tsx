@@ -9,15 +9,18 @@ import { today } from '../lib/dates';
 type Theme = 'system' | 'light' | 'dark';
 
 export function applyTheme(theme: Theme) {
-  if (theme === 'system') document.documentElement.removeAttribute('data-theme');
-  else document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.setAttribute('data-theme', theme);
+  // Statusleiste/Browserleiste passend einfärben
+  const light = theme === 'light' || (theme === 'system' && matchMedia('(prefers-color-scheme: light)').matches);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', light ? '#f3f3f4' : '#0a0a0b');
 }
 
+/** Standard ist das dunkle Design. */
 export function readTheme(): Theme {
   try {
-    return (localStorage.getItem('theme') as Theme) || 'system';
+    return (localStorage.getItem('theme') as Theme) || 'dark';
   } catch {
-    return 'system';
+    return 'dark';
   }
 }
 
@@ -130,9 +133,9 @@ export function SettingsView() {
             applyTheme(t);
           }}
           options={[
-            { value: 'system', label: 'System' },
-            { value: 'light', label: 'Hell' },
             { value: 'dark', label: 'Dunkel' },
+            { value: 'light', label: 'Hell' },
+            { value: 'system', label: 'Wie System' },
           ]}
         />
       </Card>

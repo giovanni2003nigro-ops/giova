@@ -186,7 +186,7 @@ export function DayPlanCard({ date, needs }: { date: string; needs: DayNeeds & {
             <span />
             <span />
           </div>
-          <span className="small muted">Claude plant deine Mahlzeiten …</span>
+          <span className="small muted">Die KI plant deine Mahlzeiten …</span>
         </div>
       )}
       {!plan && !busy && (

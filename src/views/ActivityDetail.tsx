@@ -3,10 +3,11 @@ import { useMemo, useState } from 'react';
 import { deleteActivity, updateActivity } from '../activities';
 import { publishActivity, unpublishActivity, useMyProfile } from '../cloud/api';
 import { cloudEnabled, cloudError } from '../cloud/client';
-import { activityStats, whenLabel } from '../components/activity';
+import { activityStats, fromLocal, whenLabel } from '../components/activity';
 import { ActivityEditor } from '../components/ActivityEditor';
 import { IconEdit, IconShare, IconTrash } from '../components/icons';
 import { RouteMap } from '../components/RouteMap';
+import { StorySheet } from '../components/StorySheet';
 import { Card, Seg, Sheet, Stat, toast } from '../components/ui';
 import { db } from '../db';
 import { navigate, useObjectUrl } from '../hooks';
@@ -22,6 +23,7 @@ export function ActivityDetailView({ id }: { id?: string }) {
   const activity = useLiveQuery(() => (id ? db.activities.get(Number(id)) : undefined), [id]);
   const medals = useLiveQuery(async () => (activity ? db.medals.filter((m) => m.date === activity.date).toArray() : []), [activity?.date]);
   const [editing, setEditing] = useState(false);
+  const [story, setStory] = useState(false);
   const photo = useObjectUrl(activity?.photo);
   const route = useMemo(() => activity?.track?.map((p) => [p.lat, p.lon] as [number, number]) ?? [], [activity?.track]);
   const splitRows = useMemo(() => (activity?.track && SPORT_DEFS[activity.sport].distance ? splits(activity.track, activity.sport === 'schwimmen' ? 100 : 1000) : []), [activity]);
@@ -74,6 +76,10 @@ export function ActivityDetailView({ id }: { id?: string }) {
         )}
       </Card>
 
+      <button className="btn primary block" onClick={() => setStory(true)}>
+        <IconShare /> Als Story teilen
+      </button>
+
       {splitRows.length > 1 && <SplitsCard sport={activity.sport} rows={splitRows} onHover={setHover} />}
 
       {activity.strength && activity.strength.length > 0 && (
@@ -121,6 +127,8 @@ export function ActivityDetailView({ id }: { id?: string }) {
           <IconTrash /> Löschen
         </button>
       </div>
+
+      {story && <StorySheet activity={fromLocal(activity)} photo={activity.photo} onClose={() => setStory(false)} />}
 
       {editing && (
         <Sheet title="Aktivität bearbeiten" onClose={() => setEditing(false)}>

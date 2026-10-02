@@ -35,10 +35,10 @@ export function RouteMap({
     L.control.zoom({ position: 'bottomright' }).addTo(m);
     m.setView([51.16, 10.45], 5);
     map.current = m;
-    const color = getComputedStyle(document.documentElement).getPropertyValue('--route').trim() || '#fc5200';
+    const color = getComputedStyle(document.documentElement).getPropertyValue('--route').trim() || '#ff5a1f';
     line.current = L.polyline([], { color, weight: 4, opacity: 0.95 }).addTo(m);
-    start.current = L.circleMarker([0, 0], { radius: 6, color: '#fff', weight: 2, fillColor: '#1baf7a', fillOpacity: 1 });
-    end.current = L.circleMarker([0, 0], { radius: 6, color: '#fff', weight: 2, fillColor: live ? '#2a78d6' : '#d03b3b', fillOpacity: 1 });
+    start.current = L.circleMarker([0, 0], { radius: 6, color: '#fff', weight: 2, fillColor: '#22c07a', fillOpacity: 1 });
+    end.current = L.circleMarker([0, 0], live ? { radius: 8, color: '#ff5a1f', weight: 4, fillColor: '#ffffff', fillOpacity: 1 } : { radius: 6, color: '#fff', weight: 2, fillColor: '#ff453a', fillOpacity: 1 });
     mark.current = L.circleMarker([0, 0], { radius: 7, color: '#fff', weight: 2, fillColor: '#0b0b0b', fillOpacity: 1 });
     // Größe erst nach dem Layout bekannt (z. B. in Sheets)
     const ro = new ResizeObserver(() => m.invalidateSize());

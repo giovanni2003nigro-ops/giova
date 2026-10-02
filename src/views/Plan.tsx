@@ -146,7 +146,7 @@ function TrainingPlanEditor() {
           </div>
         }
       >
-        <p className="small text-2">Foto, Screenshot oder PDF deines Trainingsplans – oder Text einfügen. Claude überträgt ihn in eine Wochenübersicht.</p>
+        <p className="small text-2">Foto, Screenshot oder PDF deines Trainingsplans – oder Text einfügen. Die KI überträgt ihn in eine Wochenübersicht.</p>
         <div className="grid-2">
           <button className="btn" onClick={() => cameraRef.current?.click()} disabled={busy}>
             <IconCamera /> Foto
@@ -170,13 +170,13 @@ function TrainingPlanEditor() {
               <span />
               <span />
             </div>
-            <span className="small muted">Claude liest den Plan …</span>
+            <span className="small muted">Die KI liest deinen Plan …</span>
             <button className="btn ghost small" onClick={() => abortRef.current?.abort()}>
               Abbrechen
             </button>
           </div>
         )}
-        {!apiKey && <p className="tiny muted">Dafür wird ein Claude-API-Schlüssel benötigt (Einstellungen). Manuell eintragen geht immer.</p>}
+        {!apiKey && <p className="tiny muted">Dafür wird ein KI-Schlüssel benötigt (Einstellungen). Manuell eintragen geht immer.</p>}
         {error && <ErrorBox>{error}</ErrorBox>}
         {note && <div className="hint-box">{note}</div>}
       </Card>
