@@ -2,14 +2,14 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo } from 'react';
 import { Card } from '../components/ui';
 import { db, getKV } from '../db';
+import { loadGoals } from '../needs';
 import { useToday } from '../hooks';
 import { formatDateShort } from '../lib/dates';
 import { seasonLabel, seasonOf } from '../lib/leagues';
 import { CATEGORY_LABELS, medalProgress, type MedalCategory } from '../lib/medals';
 import { SPORT_DEFS } from '../lib/sports';
 import { fmt } from '../lib/stats';
-import type { Goals, TrainingPlan } from '../types';
-import { DEFAULT_GOALS } from '../types';
+import type { TrainingPlan } from '../types';
 
 export function MedalsView() {
   const t = useToday();
@@ -20,7 +20,7 @@ export function MedalsView() {
       db.meals.toArray(),
       db.sleep.toArray(),
       db.weights.toArray(),
-      getKV<Goals>('goals', DEFAULT_GOALS),
+      loadGoals(),
       getKV<TrainingPlan | null>('trainingPlan', null),
       db.medals.toArray(),
     ]);

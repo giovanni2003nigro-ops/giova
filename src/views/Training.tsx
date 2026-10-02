@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useMemo, useState } from 'react';
 import { BarChart, LineChart } from '../components/charts';
 import { IconPlus, IconRepeat, IconTrash } from '../components/icons';
+import { InfoBang } from '../components/InfoBang';
 import { Card, DateNav, Seg, Stat, Stepper, toast } from '../components/ui';
 import { activityFromTraining, estimateStrengthDuration, saveActivity, updateActivity, useShareDefault } from '../activities';
 import { db, ensureExercise } from '../db';
@@ -194,10 +195,16 @@ function LogView({ date, setDate }: { date: string; setDate: (d: string) => void
           </label>
         )}
         {lastSession && (
-          <div className="hint-box">
-            <strong>Letztes Mal ({relativeDay(lastSession.date)}):</strong>{' '}
-            {lastSessionSets.map((s) => `${fmt(s.weight, 1)}×${s.reps}`).join(', ')}
-            {suggestion && <div style={{ marginTop: 4 }}>💡 {suggestion}</div>}
+          <div className="hint-box row between">
+            <span>
+              <strong>Letztes Mal ({relativeDay(lastSession.date)}):</strong>{' '}
+              {lastSessionSets.map((s) => `${fmt(s.weight, 1)}×${s.reps}`).join(', ')}
+            </span>
+            {suggestion && (
+              <InfoBang title="Vorschlag für heute">
+                <p>{suggestion}</p>
+              </InfoBang>
+            )}
           </div>
         )}
         <div className="grid-2">

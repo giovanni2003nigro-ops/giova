@@ -1,11 +1,13 @@
 import { db, getKV } from '../db';
 import { analyze, AREA_LABELS, SEVERITY_LABELS, type AnalysisResult } from '../lib/analysis';
 import { weightTrend } from '../lib/body';
-import { addDays, formatDateLong, formatDateShort, formatDuration } from '../lib/dates';
+import { addDays, formatDateLong, formatDateShort, formatDuration, today } from '../lib/dates';
 import { dailyTotals, sumMacros } from '../lib/nutrition';
 import { fmt, fmtSigned, pctSigned } from '../lib/stats';
 import { formatMetric, sessionsByExercise, TREND_LABELS } from '../lib/training';
-import { DEFAULT_SCHEDULE, dayNeeds } from '../lib/dailyNeeds';
+import { measuredTdee, resolveGoals } from '../lib/autoGoals';
+import { DEFAULT_SCHEDULE, dayNeeds, type NeedsInput } from '../lib/dailyNeeds';
+import { checkRules, limits } from '../lib/guardrails';
 import { formatClock, formatDistance, formatPace, SPORT_DEFS } from '../lib/sports';
 import type {
   Activity,
@@ -25,7 +27,10 @@ import type {
 import { DAY_KIND_LABELS, DEFAULT_GOALS, GOAL_LABELS, INTENSITY_LABELS, MEAL_LABELS, WEEKDAY_LABELS } from '../types';
 
 export interface AppData {
+  /** Wirksame Ziele (im Automatik-Modus berechnet) */
   goals: Goals;
+  /** Gespeicherte Eingaben aus „Ziele“ */
+  storedGoals?: Goals;
   profile: Profile | null;
   sets: WorkoutSet[];
   meals: MealEntry[];
@@ -52,7 +57,31 @@ export async function loadAppData(): Promise<AppData> {
     getKV<TrainingPlan | null>('trainingPlan', null),
     getKV<WeekSchedule | null>('schedule', null),
   ]);
-  return { goals, profile, sets, meals, sleep, weights, exercises, foods, activities, plan, schedule };
+  const data: AppData = { goals, storedGoals: goals, profile, sets, meals, sleep, weights, exercises, foods, activities, plan, schedule };
+  return { ...data, goals: resolveGoals(needsInputOf(data, today()), today()) };
+}
+
+/** Eingaben für den Tagesbedarf aus dem Datenstand (mit gespeicherten Zielen). */
+export function needsInputOf(data: AppData, ref: ISODate): NeedsInput {
+  const latest = [...data.weights].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 7);
+  return {
+    goals: data.storedGoals ?? data.goals,
+    profile: data.profile,
+    weight: latest.length ? latest.reduce((s, w) => s + w.weight, 0) / latest.length : null,
+    schedule: data.schedule ?? DEFAULT_SCHEDULE,
+    plan: data.plan,
+    activities: data.activities,
+    measuredTdee: measuredTdee(data.meals, data.weights, ref),
+    detailed: !!data.schedule || !!data.plan,
+  };
+}
+
+/** Rahmenbedingungen (Pflicht) und ob sie eingehalten sind. */
+export function describeRules(data: AppData): string {
+  const weight = needsInputOf(data, today()).weight;
+  const lim = limits(data.profile, weight);
+  const rules = checkRules(data.goals, data.plan, lim);
+  return rules.map((r) => `- ${r.ok ? '✓' : '✗ VERLETZT'} ${r.label}: ${r.requirement} (aktuell ${r.current})${r.ok ? '' : ` → ${r.fix}`}`).join('\n');
 }
 
 export function runAnalysis(data: AppData, today: ISODate): AnalysisResult {
@@ -65,7 +94,7 @@ export function describeGoals(data: AppData): string {
   const g = data.goals;
   const lines = [
     `Zieltyp: ${GOAL_LABELS[g.type]}`,
-    `Tagesziel: ${m(g)}`,
+    `Tagesziel (Wochenschnitt): ${m(g)} – ${g.auto ? 'AUTOMATISCH berechnet aus Profil, Gewicht, Alltag, Trainingsplan, gemessenem Verbrauch und Wochenrate (ändert sich mit Rate, Plan, Alltag)' : 'manuell eingetragen'}`,
     `Geplante Gewichtsveränderung: ${fmtSigned(g.weeklyRate, 2)} kg/Woche${g.targetWeight ? `, Zielgewicht ${fmt(g.targetWeight, 1)} kg` : ''}`,
     `Schlafziel: ${fmt(g.sleepHours, 1)} h · Trainingsziel: ${g.trainingDays}× pro Woche`,
   ];
@@ -230,15 +259,18 @@ export function describePlanAndDay(data: AppData, today: ISODate): string {
   if (data.plan?.sessions.length) {
     lines.push(`Trainingsplan „${data.plan.name}“:`);
     for (const s of [...data.plan.sessions].sort((a, b) => a.weekday - b.weekday))
-      lines.push(`- ${WEEKDAY_LABELS[s.weekday]}${s.time ? ` ${s.time}` : ''}: ${SPORT_DEFS[s.sport].label} „${s.title}“, ${s.durationMin} min, ${INTENSITY_LABELS[s.intensity]}${s.distanceKm ? `, ${fmt(s.distanceKm, 1)} km` : ''}`);
+      lines.push(`- [ID ${s.id}] ${WEEKDAY_LABELS[s.weekday]}${s.time ? ` ${s.time}` : ''}: ${SPORT_DEFS[s.sport].label} „${s.title}“, ${s.durationMin} min, ${INTENSITY_LABELS[s.intensity]}${s.distanceKm ? `, ${fmt(s.distanceKm, 1)} km` : ''}`);
   } else lines.push('Kein Trainingsplan hinterlegt.');
   if (data.schedule)
     lines.push(
       `Alltag: ${data.schedule.map((d, i) => `${WEEKDAY_LABELS[i].slice(0, 2)} ${DAY_KIND_LABELS[d.kind].split(' (')[0]}${d.kind !== 'frei' && d.start ? ` ${d.start}–${d.end}` : ''}`).join('; ')}`,
     );
-  const weight = weightTrend(data.weights, today)?.avg7 ?? null;
-  const n = dayNeeds(today, { goals: data.goals, profile: data.profile, weight, schedule: data.schedule ?? DEFAULT_SCHEDULE, plan: data.plan, activities: data.activities });
+  const n = dayNeeds(today, { ...needsInputOf(data, today), goals: data.goals });
   lines.push(`Bedarf heute (angepasst an Training & Alltag): ${m(n.targets)}${n.delta ? ` (${fmtSigned(n.delta)} kcal ggü. Schnitt)` : ''}`);
+  if (n.estimatedTdee)
+    lines.push(
+      `Verbrauch heute geschätzt ~${fmt(n.estimatedTdee)} kcal (Grundumsatz×1,2 ${fmt(n.breakdown.base)}, Arbeit/Uni ${fmt(n.breakdown.work)}, Wege ${fmt(n.breakdown.active)}, Training ${fmt(n.breakdown.exercise)}${n.breakdown.calibration ? `, Kalibrierung ${fmtSigned(n.breakdown.calibration)}` : ''}), Zielrate ${fmtSigned(n.breakdown.adjustment)} kcal`,
+    );
   lines.push(`Mahlzeiten-Timing heute: ${n.slots.map((s) => `${s.time} ${s.slot}`).join(', ')}`);
   return lines.join('\n');
 }
@@ -248,6 +280,7 @@ export function buildSnapshot(data: AppData, today: ISODate, analysis = runAnaly
   return [
     `Heute ist ${formatDateLong(today)} (${today}).`,
     `## Ziele & Profil\n${describeGoals(data)}`,
+    `## Rahmenbedingungen (MUSS – nie unterschreiten)\n${describeRules(data)}`,
     `## Heute\n${describeToday(data, today)}`,
     `## Gewicht\n${describeWeight(data, today)}`,
     `## Ernährung (Tagessummen, letzte 14 Tage)\n${describeNutrition(data, today)}`,

@@ -3,6 +3,7 @@ import { saveActivity, useShareDefault } from '../activities';
 import { ActivityEditor } from '../components/ActivityEditor';
 import { IconPause, IconPlay, IconStop } from '../components/icons';
 import { RouteMap } from '../components/RouteMap';
+import { InfoBang } from '../components/InfoBang';
 import { Card, ErrorBox, Sheet, toast } from '../components/ui';
 import { setKV, useKV } from '../db';
 import { navigate } from '../hooks';
@@ -173,14 +174,18 @@ export function TrackerView({ sportParam }: { sportParam?: string }) {
             <input type="checkbox" checked={s.autoPause} onChange={(e) => setAutoPause(e.target.checked)} />
             Auto-Pause (hält die Zeit an, wenn du stehst)
           </label>
-          <label className="check">
-            <input type="checkbox" checked={voice ?? true} onChange={(e) => setKV('trackerVoice', e.target.checked)} />
-            Kilometer-Ansage
-          </label>
-          <p className="tiny muted">
-            Der Bildschirm bleibt während der Aufzeichnung an. Sperrst du das Handy oder wechselst die App, kann der Browser das GPS anhalten –
-            für lange Einheiten ist die Aufzeichnung mit der Uhr und der Import (Garmin/FIT) am zuverlässigsten.
-          </p>
+          <div className="row between">
+            <label className="check">
+              <input type="checkbox" checked={voice ?? true} onChange={(e) => setKV('trackerVoice', e.target.checked)} />
+              Kilometer-Ansage
+            </label>
+            <InfoBang title="Tipp zur Aufzeichnung">
+              <p>
+                Der Bildschirm bleibt während der Aufzeichnung an. Sperrst du das Handy oder wechselst die App, kann der Browser das GPS anhalten – für lange
+                Einheiten ist die Aufzeichnung mit der Uhr und der Import (Garmin/FIT) am zuverlässigsten.
+              </p>
+            </InfoBang>
+          </div>
         </Card>
       )}
 

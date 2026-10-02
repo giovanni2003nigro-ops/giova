@@ -1,6 +1,7 @@
-import { useEffect, type ComponentType, type SVGProps } from 'react';
+import { useEffect, useState, type ComponentType, type SVGProps } from 'react';
 import { useMedalWatcher } from './activities';
-import { IconBack, IconChat, IconFood, IconGear, IconHome, IconPlus, IconTrophy, IconUser, IconUsers } from './components/icons';
+import { IconBack, IconFood, IconSparkle, IconGear, IconHome, IconPlus, IconTrophy, IconUser, IconUsers } from './components/icons';
+import { NoticesButton } from './components/Notices';
 import { Toaster, toast } from './components/ui';
 import { navigate, useRoute, type RouteName } from './hooks';
 import { formatClock } from './lib/sports';
@@ -8,7 +9,7 @@ import { restoreDraft, useTracker } from './trackerStore';
 import { AccountView } from './views/Account';
 import { ActivityDetailView } from './views/ActivityDetail';
 import { AthleteView } from './views/Athlete';
-import { CoachView } from './views/Coach';
+import { COACH_PAGES, CoachSheet, CoachView } from './views/Coach';
 import { DashboardView } from './views/Dashboard';
 import { FeedView } from './views/Feed';
 import { GoalsView } from './views/Goals';
@@ -80,7 +81,13 @@ export function App() {
   const tracker = useTracker();
   const active = PARENT[route.name] ?? route.name;
   const isSub = !!PARENT[route.name];
+  // Coach überall – außer Social Media (Feed, Beiträge, Profile) und Ranglisten
+  const coachHere = route.name !== 'coach' && !!COACH_PAGES[route.name];
+  const [coachOpen, setCoachOpen] = useState(false);
   useMedalWatcher();
+  useEffect(() => {
+    if (!coachHere) setCoachOpen(false);
+  }, [coachHere]);
 
   useEffect(() => {
     void restoreDraft().then((restored) => {
@@ -106,9 +113,12 @@ export function App() {
           </div>
         </div>
         <div className="row" style={{ gap: 0 }}>
-          <button className="icon-btn" onClick={() => navigate('coach')} aria-label="KI-Coach">
-            <IconChat />
-          </button>
+          <NoticesButton page={route.name} />
+          {coachHere && (
+            <button className="icon-btn coach-btn" onClick={() => setCoachOpen(true)} aria-label="KI-Coach öffnen">
+              <IconSparkle />
+            </button>
+          )}
           <button className="icon-btn" onClick={() => navigate('einstellungen')} aria-label="Einstellungen">
             <IconGear />
           </button>
@@ -120,6 +130,7 @@ export function App() {
           {tracker.distanceM > 0 && ` · ${(tracker.distanceM / 1000).toFixed(2).replace('.', ',')} km`}
         </button>
       )}
+      {coachOpen && coachHere && <CoachSheet route={route} onClose={() => setCoachOpen(false)} />}
       <main>
         {route.name === 'heute' && <DashboardView />}
         {route.name === 'feed' && <FeedView />}

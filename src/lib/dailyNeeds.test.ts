@@ -29,8 +29,9 @@ describe('Tagesbedarf', () => {
     expect(weekdayOf('2026-10-04')).toBe(6);
   });
 
-  it('verteilt das Kalorienziel nach Belastung – der Wochenschnitt bleibt gleich', () => {
-    const week = weekNeeds('2026-09-30', input);
+  it('verteilt ein manuelles Kalorienziel genau nach Belastung – der Wochenschnitt bleibt gleich', () => {
+    const manual = { ...input, goals: { ...goals, auto: false } };
+    const week = weekNeeds('2026-09-30', manual);
     const avg = week.reduce((s, d) => s + d.targets.kcal, 0) / 7;
     expect(Math.abs(avg - goals.kcal)).toBeLessThan(10);
     const byDay = Object.fromEntries(week.map((d) => [d.weekday, d]));
@@ -41,11 +42,57 @@ describe('Tagesbedarf', () => {
     expect(byDay[1].targets.protein).toBe(160);
     expect(byDay[5].targets.carbs).toBeGreaterThan(byDay[6].targets.carbs);
     expect(byDay[1].targets.kcal).toBeGreaterThan(byDay[0].targets.kcal);
-    // Ausschläge bleiben in einem sinnvollen Rahmen
+    // Kein Deckel: Der Unterschied zweier Tage entspricht genau dem Unterschied im Verbrauch
+    const diff = byDay[5].targets.kcal - byDay[6].targets.kcal;
+    const tdeeDiff = byDay[5].estimatedTdee! - byDay[6].estimatedTdee!;
+    expect(Math.abs(diff - tdeeDiff)).toBeLessThanOrEqual(10);
+    expect(week.every((d) => !d.auto)).toBe(true);
+  });
+
+  it('berechnet automatisch: Verbrauch des Tages + Wochenrate', () => {
+    const week = weekNeeds('2026-09-30', input);
     for (const d of week) {
-      expect(d.targets.kcal).toBeGreaterThanOrEqual(goals.kcal * 0.85 - 10);
-      expect(d.targets.kcal).toBeLessThanOrEqual(goals.kcal * 1.3 + 10);
+      expect(d.auto).toBe(true);
+      expect(Math.abs(d.targets.kcal - (d.estimatedTdee! - 275))).toBeLessThanOrEqual(5);
     }
+  });
+
+  it('ändert den Bedarf sofort mit der Wochenrate', () => {
+    const lose = dayNeeds('2026-09-29', { ...input, goals: { ...goals, weeklyRate: -0.5 } });
+    const keep = dayNeeds('2026-09-29', { ...input, goals: { ...goals, weeklyRate: 0 } });
+    const gain = dayNeeds('2026-09-29', { ...input, goals: { ...goals, weeklyRate: 0.25 } });
+    expect(Math.abs(keep.targets.kcal - lose.targets.kcal - 550)).toBeLessThanOrEqual(10);
+    expect(Math.abs(gain.targets.kcal - keep.targets.kcal - 275)).toBeLessThanOrEqual(10);
+  });
+
+  it('reagiert auf Alltag und Trainingsplan', () => {
+    const office = dayNeeds('2026-09-28', input);
+    const physical = dayNeeds('2026-09-28', { ...input, schedule: input.schedule.map((d, i) => (i === 0 ? { ...d, kind: 'koerperlich' as const } : d)) });
+    expect(physical.targets.kcal - office.targets.kcal).toBeGreaterThan(500);
+    const extra = dayNeeds('2026-09-28', { ...input, plan: { ...plan, sessions: [...plan.sessions, { id: '4', weekday: 0, sport: 'schwimmen', title: 'Technik', durationMin: 45, intensity: 'mittel' }] } });
+    expect(extra.targets.kcal).toBeGreaterThan(office.targets.kcal + 200);
+  });
+
+  it('kalibriert mit dem gemessenen Verbrauch (höchstens ±400 kcal)', () => {
+    const base = weekNeeds('2026-09-30', input);
+    const avg = base.reduce((s, d) => s + d.estimatedTdee!, 0) / 7;
+    const higher = dayNeeds('2026-09-29', { ...input, measuredTdee: avg + 200 });
+    expect(higher.breakdown.calibration).toBeCloseTo(200, -1);
+    expect(higher.targets.kcal - dayNeeds('2026-09-29', input).targets.kcal).toBeCloseTo(200, -1);
+    expect(dayNeeds('2026-09-29', { ...input, measuredTdee: avg + 2000 }).breakdown.calibration).toBe(400);
+  });
+
+  it('ohne Alltag & Plan: pauschaler Aktivitätsfaktor', () => {
+    const d = dayNeeds('2026-09-29', { ...input, plan: null, detailed: false });
+    // BMR 1805 × 1,5 − 275
+    expect(d.targets.kcal).toBe(Math.round((1805 * 1.5 - 275) / 10) * 10);
+    expect(d.breakdown.work).toBe(0);
+  });
+
+  it('geht nie unter den Grundumsatz', () => {
+    const d = dayNeeds('2026-10-04', { ...input, goals: { ...goals, weeklyRate: -3 } });
+    expect(d.targets.kcal).toBe(1810);
+    expect(d.notes.some((n) => n.includes('Rahmenbedingung'))).toBe(true);
   });
 
   it('schätzt den Verbrauch mit Profil', () => {

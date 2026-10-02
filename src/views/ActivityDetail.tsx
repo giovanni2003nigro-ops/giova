@@ -8,6 +8,7 @@ import { ActivityEditor } from '../components/ActivityEditor';
 import { IconEdit, IconShare, IconTrash } from '../components/icons';
 import { RouteMap } from '../components/RouteMap';
 import { StorySheet } from '../components/StorySheet';
+import { InfoBang } from '../components/InfoBang';
 import { Card, Seg, Sheet, Stat, toast } from '../components/ui';
 import { db } from '../db';
 import { navigate, useObjectUrl } from '../hooks';
@@ -61,9 +62,15 @@ export function ActivityDetailView({ id }: { id?: string }) {
             <Stat key={s.label} tile label={s.label} value={s.value} />
           ))}
         </div>
-        <div className="hint-box">
-          <strong>+{fmt(activity.points)} Punkte</strong> für Rangliste & Liga · {POINTS_RULES[activity.sport]}
-          {activity.points === 0 && <div>Keine Punkte: Die Werte wirken unrealistisch (z. B. zu schnell für die Sportart).</div>}
+        <div className="hint-box row between">
+          <span>
+            <strong>+{fmt(activity.points)} Punkte</strong> für Rangliste & Liga · {POINTS_RULES[activity.sport]}
+          </span>
+          {activity.points === 0 && (
+            <InfoBang title="Keine Punkte" tone="warn">
+              <p>Die Werte wirken unrealistisch (z. B. zu schnell für die Sportart) – dafür gibt es keine Punkte. Prüfe Distanz und Dauer.</p>
+            </InfoBang>
+          )}
         </div>
         {related.length > 0 && (
           <div className="chips">

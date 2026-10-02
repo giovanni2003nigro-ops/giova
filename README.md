@@ -5,13 +5,15 @@ Plattform für Sportarten, die man meistens allein macht – **Laufen, Radfahren
 Die App läuft als Web-App (PWA) im Browser und lässt sich auf dem Handy wie eine App installieren.
 
 <p>
-  <img src="docs/screenshots/dark-08-feed.png" width="200" alt="Feed">
+  <img src="docs/screenshots/dark-08-beitraege.png" width="200" alt="Sport-Beiträge">
   <img src="docs/screenshots/dark-04-aktivitaet.png" width="200" alt="Aktivität mit Karte">
   <img src="docs/screenshots/story-dark.png" width="200" alt="Story-Bild zum Teilen">
-  <img src="docs/screenshots/dark-05-ligen.png" width="200" alt="Ligen">
+  <img src="docs/screenshots/dark-15-ziele.png" width="200" alt="Ziele mit automatischem Tagesbedarf">
 </p>
 
-Design: dunkel mit Orange-Rot-Verlauf, sportliche Schriften (Barlow Condensed für Zahlen, Plus Jakarta Sans für Text; beide in der App gebündelt, ohne Google-Server). Ein helles Design lässt sich unter ⚙︎ → *Darstellung* wählen.
+**Design:** dunkel mit Akzentfarbe nach Wahl (**Rot** als Standard, **Matcha-Grün** oder **Viola**). Große weiße Schrift in **Poppins**, kleine graue Schrift in **Courier New** (Courier Prime als gebündelter Ersatz, falls das Gerät sie nicht hat). Beides lässt sich unter ⚙︎ → *Darstellung* ändern, auch hell/dunkel und eigene Schriften für groß und klein (Poppins, Barlow, Jakarta, System). Alle Schriften sind in der App gebündelt, ohne Google-Server. Story-Bilder, Karte und App übernehmen die gewählte Farbe.
+
+**Hinweise erst auf Wunsch:** Vorschläge und Warnungen stehen nicht mehr überall auf den Seiten. Gibt es welche, erscheint oben ein **(!)** mit der Anzahl, und erst ein Tipp darauf zeigt sie. Dasselbe gilt für Hinweise in einzelnen Karten (z. B. im Tagesplan oder beim Satz-Vorschlag).
 
 ## Funktionen
 
@@ -29,6 +31,21 @@ Design: dunkel mit Orange-Rot-Verlauf, sportliche Schriften (Barlow Condensed f�
 - Sichtbarkeit pro Aktivität: *Öffentlich*, *Nur Follower* oder *Nur ich*. Auch „Nur ich“ zählt für die Liga, ist aber für niemanden sonst sichtbar.
 - Datenschutz: Start und Ziel lassen sich auf der Karte ausblenden (je 200 m). Die Region wird nur als grobes Raster gespeichert (≈ 40 × 20 km). Ernährung, Schlaf und Gewicht bleiben auf deinem Gerät.
 
+### Sport-Beiträge (Fotos & Videos)
+Im Feed gibt es neben *Aktivitäten* den Bereich **Beiträge**: Fotos und kurze Videos (max. 60 s) zu **Rekorden, Technik („so läuft man richtig“), Training, Wettkämpfen, Sportoutfits, Motivation und Sporternährung**, mit Likes und Kommentaren. Auf jedem Profil gibt es ein Raster mit den Beiträgen.
+
+**Kontrollen, damit nur Sport gepostet wird:**
+
+| Kontrolle | Wie |
+|---|---|
+| Pflicht-Kategorie | Nur die 7 Sport-Kategorien sind wählbar, die Datenbank erzwingt das zusätzlich per CHECK. |
+| KI-Prüfung vor dem Hochladen | Claude prüft Foto bzw. drei Einzelbilder des Videos (Anfang, Mitte, Ende) zusammen mit dem Text auf Sportbezug und unangemessene Inhalte (Nacktheit, Gewalt, Hass, Drogen, Werbung, private Daten). Abgelehnte Inhalte verlassen das Handy gar nicht erst. |
+| Server entscheidet über den Status | Der Client kann „veröffentlicht“ nicht selbst setzen. Je nach Modus schaltet die KI-Prüfung, die Edge Function `moderate-post` oder ein Moderator frei. |
+| Melden | Gründe: kein Sport, unangemessen, Spam, Belästigung. Ab 3 Meldungen von verschiedenen Personen wird ein Beitrag automatisch ausgeblendet, bis ein Moderator entscheidet. |
+| Blockieren | Ihr seht gegenseitig keine Beiträge und Kommentare mehr, könnt nicht liken oder kommentieren, Follows werden entfernt. Aufheben unter *Profil → Konto*. |
+| Moderatoren | Sehen unter *Beiträge → Prüfen* wartende und gemeldete Beiträge und können freigeben, ablehnen oder sperren. |
+| Limits | Keine Links in Texten und Kommentaren, Videos max. 60 s / 50 MB, max. 10 Beiträge pro Tag, Medien nur im eigenen Speicherordner. |
+
 ### Punkte, Ligen & Medaillen
 - **Punkte je Aktivität** nach Sportart, zum Beispiel Laufen mit 10 Punkten pro km × Tempofaktor (6:00 /km = 1,0, schneller bis 1,5) und Hyrox mit 2 Punkten pro Minute (Wettkampf × 1,5). Unrealistische Werte geben 0 Punkte. Die Punkte berechnet der Server, der Client kann sie nicht manipulieren.
 - **Sechs Ligen pro Sportart:** 🥉 Bronze, 🥈 Silber, 🥇 Gold, 💠 Platin, 💎 Diamant, 👑 Elite. Du wirst nach deiner Leistung der letzten 30 Tage eingestuft, entweder über den **Umfang** (z. B. km pro Monat) **oder** über das **Tempo** (z. B. Ø Pace ab 20 km). Beim Powerlifting zählt der **DOTS-Wert**, bei Hyrox die **Wettkampf-Bestzeit**.
@@ -39,11 +56,17 @@ Design: dunkel mit Orange-Rot-Verlauf, sportliche Schriften (Barlow Condensed f�
 - **32 Medaillen für erreichte Ziele**, zum Beispiel erste 10 km, Halbmarathon, Hyrox unter 1:30 h, 2 × Körpergewicht Kreuzheben, 7 Tage Proteinziel, Zielgewicht, Kraftziel oder eine komplett umgesetzte Planwoche. Sie bringen **Bonuspunkte**: Sport-Medaillen zählen in der Liga ihrer Sportart, allgemeine in allen Ligen. Monats-Medaillen lassen sich jede Saison neu verdienen.
 
 ### Ernährung mit KI-Plan
-- **Tagesbedarf:** Aus Trainingsplan, Alltag (Büro, Uni, Arbeit im Stehen, körperliche Arbeit, Wege zu Fuß/Rad) und deinem Kalorienziel wird der Bedarf für jeden Tag berechnet. Der Wochenschnitt bleibt dein Ziel. An harten Tagen gibt es mehr, an Ruhetagen weniger, begrenzt auf −15 % bzw. +30 %. Protein und Fett bleiben gleich, die Kohlenhydrate gleichen aus. Schon aufgezeichnete Einheiten ersetzen die geplanten.
+- **Tagesbedarf, genau pro Tag:** Verbrauch des Tages = Grundumsatz × 1,2 + Arbeit/Uni (Büro, Uni, Arbeit im Stehen, körperliche Arbeit) + Wege zu Fuß/Rad + Training (geplant oder schon aufgezeichnet). Dazu kommt die Zielrate aus *Ziele & Körper* (z. B. −0,5 kg/Woche = −550 kcal/Tag). Jeder Tag bekommt genau seinen Mehr- oder Minderbedarf, ohne Deckel. Sobald 3 Wochen Essen und Gewicht da sind, wird das Modell mit deinem **gemessenen Verbrauch kalibriert** (höchstens ±400 kcal). Protein und Fett bleiben gleich, die Kohlenhydrate gleichen aus. Nie unter dem Grundumsatz.
+- **Ziele automatisch:** In *Ziele & Körper* rechnet die App Kalorien und Makros standardmäßig automatisch. Änderst du *Änderung (kg/Woche)*, den Zieltyp, das Profil, den Trainingsplan oder den Alltag, ändern sich die Tagesziele sofort mit (Live-Vorschau mit Wochenbalken). Im Modus *Manuell* gibst du die Werte selbst vor; auch dann wandert das Kalorienziel mit der Wochenrate.
 - **Mahlzeiten-Timing** passend zu Aufstehen, Arbeit/Uni und Training, zum Beispiel ein Snack vor dem Training, Regeneration danach und Meal-Prep, wenn es tagsüber keine Küche gibt.
 - **Trainingsplan hochladen:** Foto, Screenshot, PDF oder Text. Claude überträgt ihn in eine Wochenübersicht, die du danach bearbeiten kannst.
 - **KI-Tagesplan:** Claude schlägt Rezepte vor, vor allem aus deiner Lebensmittel-Bibliothek (Nährwerte fotografieren). Die Nährwerte rechnet die App selbst aus der Bibliothek nach und stimmt die Mengen auf dein Ziel ab. Jede Mahlzeit lässt sich mit einem Tipp ins Tagebuch eintragen.
-- Das bisherige Kalorien-Tagebuch, der Foto-Scan von Nährwerttabellen, Schlaf, Gewicht, Ziele, Zielabgleich und der KI-Coach sind weiter da. Der Coach kennt jetzt auch Aktivitäten, Trainingsplan und Tagesbedarf.
+- Das bisherige Kalorien-Tagebuch, der Foto-Scan von Nährwerttabellen, Schlaf, Gewicht, Ziele und der Zielabgleich sind weiter da.
+
+### KI-Coach überall – mit Rahmenbedingungen
+- Der Coach (✦ oben rechts) öffnet sich auf **jeder Seite** als Overlay und weiß, wo du gerade bist: Übersicht, Ernährung, Krafttraining, Aufzeichnen, Aktivität, Schlaf, Ziele, Plan & Alltag, Profil. Passende Vorschläge stehen schon da. **Nicht** auf Feed, Beiträgen, fremden Profilen, Ligen und Medaillen – dort hat er auch keinen Datenzugriff.
+- Er kann nicht nur lesen, sondern auf Wunsch auch **ändern**: Mahlzeiten und Lebensmittel, Ziele (Rate, Zieltyp, Schlaf, Automatik), Trainingsplan (Einheiten hinzufügen/entfernen oder neu bauen), Alltag (Arbeit/Uni je Wochentag), Aktivitäten, Kraftsätze, Schlaf, Gewicht und Ernährungsvorlieben. Er kann auch die passende Seite öffnen.
+- **Berater-Prinzip:** Es gibt **Rahmenbedingungen, die immer gelten** – mindestens Grundumsatz an Kalorien, Protein ≥ 1,6 g/kg, Fett ≥ 0,6 g/kg, höchstens 1 % Körpergewicht pro Woche abnehmen bzw. 0,5 % zunehmen, Schlafziel ≥ 7 h, mindestens 1 Ruhetag und höchstens 3 harte Einheiten pro Woche. Innerhalb davon passt sich alles an deine Bedürfnisse und Pläne an. Ziele außerhalb werden beim Speichern angepasst (mit Begründung), Trainingspläne mit Verstoß lehnt der Coach ab und schlägt die nächstbeste Variante vor. Die Regeln stehen auch in *Ziele & Körper*.
 
 ## Starten
 
@@ -65,6 +88,7 @@ Ohne Server funktioniert alles lokal: Aufzeichnen, Import, Punkte, Leistungsstuf
 2. Im *SQL Editor* nacheinander ausführen:
    - `supabase/migrations/20260930120000_platform.sql` (Tabellen, Sicherheitsregeln, Punkte, Ligen, Feed)
    - `supabase/migrations/20260930120100_cron_storage.sql` (Saisonabschluss am Monatsersten, Speicher für Fotos)
+   - `supabase/migrations/20261002120000_posts.sql` (Sport-Beiträge, Melden, Blockieren, Moderation)
 
    Alternativ mit der Supabase-CLI: `supabase init`, `supabase link` und danach `supabase db push`.
 3. Unter *Authentication → URL Configuration* die Adresse der App als **Site URL** und **Redirect URL** eintragen, zum Beispiel `https://<name>.github.io/giova/`.
@@ -72,6 +96,21 @@ Ohne Server funktioniert alles lokal: Aufzeichnen, Import, Punkte, Leistungsstuf
 5. Lokal: `.env.local` mit `VITE_SUPABASE_URL=…` und `VITE_SUPABASE_ANON_KEY=…` anlegen. Zum Ausprobieren kannst du beides auch in der App unter *Profil → Konto* eintragen.
 
 Der Saisonabschluss (`close_season`) läuft per pg_cron am Monatsersten um 00:15 UTC. Ohne pg_cron: `select public.close_season('2026-09');` monatlich selbst ausführen.
+
+**Prüfung der Beiträge einstellen** (Tabelle `app_config`, Eintrag `moderation`):
+
+- `"mode": "client"` (Standard): Die App prüft mit dem KI-Schlüssel der Person, die postet. Nur Beiträge mit Sportbezug werden sofort sichtbar. Ohne Schlüssel landet ein Beitrag „in Prüfung“ bei den Moderatoren. Einfach und kostenlos für dich, aber eine manipulierte App könnte die Prüfung umgehen – dafür gibt es Melden, automatisches Ausblenden und Moderation.
+- `"mode": "server"` (am sichersten): Jeder Beitrag startet „in Prüfung“, die Edge Function prüft mit **deinem** Schlüssel und schaltet frei oder lehnt ab:
+  ```bash
+  supabase secrets set ANTHROPIC_API_KEY=sk-ant-…
+  supabase functions deploy moderate-post
+  ```
+  ```sql
+  update public.app_config set value = value || '{"mode": "server"}' where key = 'moderation';
+  ```
+- `"mode": "manuell"`: Nur Moderatoren schalten frei.
+- Weitere Werte: `auto_hide_reports` (Standard 3) und `max_posts_per_day` (Standard 10).
+- Moderator festlegen: `insert into public.moderators (user_id) select id from public.profiles where username = 'dein.name';`
 
 **Wichtig:** Punkte-, Liga- und Medaillenregeln stehen zweimal im Code, in TypeScript (`src/lib/points.ts`, `leagues.ts`, `medals.ts`) für die sofortige Anzeige und in SQL für die verbindliche Wertung. `npm run test:db` rechnet 400 Zufallsfälle und einen kompletten Saisonabschluss mit 37 Personen auf beiden Seiten und vergleicht die Ergebnisse. Das läuft auch in der CI.
 
@@ -94,18 +133,19 @@ Foto-Erkennung, Plan-Upload, KI-Tagesplan, Chat und Analyse brauchen einen Claud
 ## Daten
 
 - **Auf dem Gerät (IndexedDB):** alles, auch Fotos und GPS-Tracks. Unter ⚙︎ → *Daten & Sicherung* lässt sich eine JSON-Sicherung exportieren und wieder importieren, inklusive Aktivitäten, Medaillen und KI-Plänen.
-- **Auf dem Community-Server** (nur mit Konto): Profil, geteilte Aktivitäten (Route vereinfacht, auf Wunsch ohne Start/Ziel), Kudos, Kommentare, Follows, Medaillen und Liga-Zugehörigkeit. Unter *Profil → Konto → Community-Daten löschen* lässt sich alles entfernen.
+- **Auf dem Community-Server** (nur mit Konto): Profil, geteilte Aktivitäten (Route vereinfacht, auf Wunsch ohne Start/Ziel), Beiträge, Kudos, Likes, Kommentare, Follows, Blockierungen, Medaillen und Liga-Zugehörigkeit. Unter *Profil → Konto → Community-Daten löschen* lässt sich alles entfernen.
 
 ## Aufbau
 
 | Pfad | Inhalt |
 |---|---|
 | `src/lib/` | Reine Logik mit Tests: Sportarten, GPS (`geo.ts`), Import (`importers.ts`), Live-Tracker (`tracker.ts`), Punkte, Ligen, Medaillen, Tagesbedarf (`dailyNeeds.ts`), dazu die bisherige Trainings-/Ernährungs-/Schlaf-Auswertung |
-| `src/cloud/` | Supabase-Anbindung: Konto, Profil, Feed, Kudos, Kommentare, Folgen, Ligen |
-| `src/ai/` | Claude: Foto-Auslesen, Chat mit Werkzeugen, Coach-Analyse, Trainingsplan lesen (`trainingPlan.ts`), KI-Tagesplan (`mealPlan.ts`) |
+| `src/cloud/` | Supabase-Anbindung: Konto, Profil, Feed, Kudos, Kommentare, Folgen, Ligen, Sport-Beiträge (`posts.ts`) |
+| `src/ai/` | Claude: Foto-Auslesen, Chat mit Werkzeugen (`tools.ts`, ändernde Werkzeuge in `actions.ts`), Coach-Analyse, Trainingsplan lesen, KI-Tagesplan, Beitragsprüfung (`postCheck.ts`) |
+| `src/lib/guardrails.ts`, `autoGoals.ts` | Rahmenbedingungen und automatische Tagesziele |
 | `src/views/` | Bildschirme: Heute, Feed, Aufzeichnen, Tracker, Import, Aktivität, Ligen, Medaillen, Essen, Profil, Plan & Alltag, Konto, Coach … |
 | `src/components/` | UI-Bausteine, Karte (Leaflet/OpenStreetMap), Aktivitätskarten, Diagramme, Foto-Scanner |
-| `supabase/` | Datenbank-Migrationen (Schema, Row Level Security, Ligen-Logik, Saisonabschluss) und SQL-Tests |
+| `supabase/` | Datenbank-Migrationen (Schema, Row Level Security, Ligen-Logik, Saisonabschluss, Beiträge & Moderation), SQL-Tests und die Edge Function `moderate-post` |
 
 Die Karte nutzt die Kacheln von OpenStreetMap. Für eine größere Nutzerzahl einen eigenen Kachel-Anbieter über `VITE_MAP_TILES` (URL-Muster) und `VITE_MAP_ATTRIBUTION` eintragen, siehe die [Nutzungsrichtlinie](https://operations.osmfoundation.org/policies/tiles/).
 

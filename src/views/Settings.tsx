@@ -4,6 +4,7 @@ import { Card, ErrorBox, Seg, toast } from '../components/ui';
 import { setKV } from '../db';
 import { useApiKey } from '../hooks';
 import { deleteAllData, exportBackup, importBackup } from '../lib/backup';
+import { ACCENTS, FONTS_LARGE, FONTS_SMALL, readAppearance, saveAppearance, type Accent, type Appearance, type FontLarge, type FontSmall } from '../lib/appearance';
 import { today } from '../lib/dates';
 
 type Theme = 'system' | 'light' | 'dark';
@@ -138,6 +139,7 @@ export function SettingsView() {
             { value: 'system', label: 'Wie System' },
           ]}
         />
+        <AppearancePicker />
       </Card>
 
       <Card title="Daten & Sicherung">
@@ -162,5 +164,63 @@ export function SettingsView() {
         Giova Fit · Kein Ersatz für ärztliche oder ernährungsmedizinische Beratung.
       </p>
     </div>
+  );
+}
+
+/** Akzentfarbe und Schriften wählen – wirkt sofort. */
+function AppearancePicker() {
+  const [a, setA] = useState<Appearance>(readAppearance);
+  const set = (patch: Partial<Appearance>) => {
+    const next = { ...a, ...patch };
+    setA(next);
+    saveAppearance(next);
+  };
+  return (
+    <>
+      <div className="field">
+        <span>Akzentfarbe</span>
+        <div className="accent-picks" role="radiogroup" aria-label="Akzentfarbe">
+          {(Object.keys(ACCENTS) as Accent[]).map((k) => (
+            <button
+              key={k}
+              type="button"
+              role="radio"
+              aria-checked={a.accent === k}
+              className="accent-pick"
+              onClick={() => set({ accent: k })}
+            >
+              <span className="accent-dot" style={{ background: `linear-gradient(135deg, ${ACCENTS[k].grad.join(', ')})` }} />
+              {ACCENTS[k].label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="grid-2">
+        <label className="field">
+          <span>Große Schrift</span>
+          <select className="input" value={a.fontLarge} onChange={(e) => set({ fontLarge: e.target.value as FontLarge })}>
+            {(Object.keys(FONTS_LARGE) as FontLarge[]).map((k) => (
+              <option key={k} value={k}>
+                {FONTS_LARGE[k].label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          <span>Kleine Schrift</span>
+          <select className="input" value={a.fontSmall} onChange={(e) => set({ fontSmall: e.target.value as FontSmall })}>
+            {(Object.keys(FONTS_SMALL) as FontSmall[]).map((k) => (
+              <option key={k} value={k}>
+                {FONTS_SMALL[k].label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="font-preview">
+        <strong>12,4 km · 4:52 /km</strong>
+        <span className="small muted">Große Schrift für Werte & Titel, kleine graue für Details.</span>
+      </div>
+    </>
   );
 }

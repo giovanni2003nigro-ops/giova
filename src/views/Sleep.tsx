@@ -2,9 +2,9 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useEffect, useMemo, useState } from 'react';
 import { BarChart } from '../components/charts';
 import { IconTrash } from '../components/icons';
-import { Card, RecommendationItem, Stat, toast } from '../components/ui';
+import { Card, Stat, toast } from '../components/ui';
 import { db } from '../db';
-import { useAnalysis, useAppData, useToday } from '../hooks';
+import { useAppData, useToday } from '../hooks';
 import { addDays, dateRange, formatDateShort, formatDuration, relativeDay } from '../lib/dates';
 import { sleepDurationMin, summarizeSleep } from '../lib/sleep';
 import { fmt } from '../lib/stats';
@@ -15,7 +15,6 @@ const QUALITY_LABELS = ['', 'Sehr schlecht', 'Schlecht', 'Okay', 'Gut', 'Sehr gu
 export function SleepView() {
   const t = useToday();
   const data = useAppData();
-  const analysis = useAnalysis(data);
   const entries = useLiveQuery(() => db.sleep.orderBy('date').reverse().toArray(), []) ?? [];
 
   const [date, setDate] = useState(t);
@@ -52,8 +51,6 @@ export function SleepView() {
   const stats30 = useMemo(() => summarizeSleep(entries, addDays(t, -29), t, target), [entries, t, target]);
   const byDate = new Map(entries.map((e) => [e.date, e]));
   const chartDays = dateRange(addDays(t, -13), t);
-  const recs = analysis?.recommendations.filter((r) => r.area === 'schlaf') ?? [];
-  const insight = analysis?.insights.find((i) => i.id === 'schlaf-leistung');
 
   return (
     <div className="content">
@@ -126,21 +123,6 @@ export function SleepView() {
           valueLabel="Schlaf"
         />
       </Card>
-
-      {(recs.length > 0 || insight) && (
-        <Card title="Bewertung">
-          {recs.map((r) => (
-            <RecommendationItem key={r.id} rec={r} />
-          ))}
-          {insight && (
-            <div className="hint-box">
-              <strong>{insight.title}</strong>
-              <div>{insight.detail}</div>
-              <div style={{ marginTop: 4 }}>→ {insight.conclusion}</div>
-            </div>
-          )}
-        </Card>
-      )}
 
       <Card title="Letzte Nächte">
         {entries.length === 0 && <div className="empty">Noch keine Einträge.</div>}

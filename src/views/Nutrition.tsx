@@ -7,13 +7,13 @@ import { FoodLibrarySheet } from '../components/FoodLibrarySheet';
 import { IconBook, IconCamera, IconPlus, IconTrash } from '../components/icons';
 import { Card, DateNav, Meter, Sheet } from '../components/ui';
 import { LabelScanner } from '../components/LabelScanner';
-import { db, useKV } from '../db';
+import { db } from '../db';
 import { useToday } from '../hooks';
 import { addDays, dateRange } from '../lib/dates';
 import { dailyTotals, sumMacros } from '../lib/nutrition';
 import { fmt } from '../lib/stats';
-import { useDayNeeds } from '../needs';
-import type { Food, Goals, MealType } from '../types';
+import { useDayNeeds, useGoals } from '../needs';
+import type { Food, MealType } from '../types';
 import { DEFAULT_GOALS, MEAL_LABELS, MEAL_TYPES } from '../types';
 
 type SheetState =
@@ -34,7 +34,7 @@ export function NutritionView() {
   const t = useToday();
   const [date, setDate] = useState(t);
   const [sheet, setSheet] = useState<SheetState>(null);
-  const goals = useKV<Goals>('goals', DEFAULT_GOALS) ?? DEFAULT_GOALS;
+  const goals = useGoals() ?? DEFAULT_GOALS;
   const entries = useLiveQuery(() => db.meals.where('date').equals(date).toArray(), [date]) ?? [];
   const recent = useLiveQuery(() => db.meals.where('date').between(addDays(t, -13), t, true, true).toArray(), [t]) ?? [];
   const total = sumMacros(entries);

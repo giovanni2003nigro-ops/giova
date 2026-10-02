@@ -16,6 +16,8 @@
     "@anthropic-ai/sdk": "^0.129.0",
     "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
     "@fontsource/barlow-condensed": "^5.3.0",
+    "@fontsource/courier-prime": "^5.3.0",
+    "@fontsource/poppins": "^5.3.0",
     "@garmin/fitsdk": "^21.217.0",
     "@supabase/supabase-js": "^2.117.2",
     "dexie": "^4.4.6",

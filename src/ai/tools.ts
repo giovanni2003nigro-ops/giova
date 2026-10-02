@@ -1,6 +1,8 @@
 import type { BetaTool, BetaToolResultBlockParam, BetaToolUseBlock } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 import { z } from 'zod';
 import { db } from '../db';
+import { dayNeeds } from '../lib/dailyNeeds';
+import { ACTION_LABELS, ACTION_TOOLS, executeAction, isAction } from './actions';
 import { today as getToday } from '../lib/dates';
 import { combine, sumMacros } from '../lib/nutrition';
 import { fmt } from '../lib/stats';
@@ -10,6 +12,7 @@ import {
   buildSnapshot,
   describeActivities,
   describeAnalysis,
+  describeRules,
   describePlanAndDay,
   describeGoals,
   describeNutrition,
@@ -18,6 +21,7 @@ import {
   describeTraining,
   describeWeight,
   loadAppData,
+  needsInputOf,
   runAnalysis,
 } from './context';
 
@@ -40,7 +44,7 @@ const Macros100 = z.object({
   fett: z.number().min(0),
 });
 
-const BEREICHE = ['heute', 'ernaehrung_14_tage', 'training', 'aktivitaeten', 'plan_und_bedarf', 'schlaf', 'gewicht', 'ziele', 'auswertung', 'alles'] as const;
+const BEREICHE = ['heute', 'ernaehrung_14_tage', 'training', 'aktivitaeten', 'plan_und_bedarf', 'schlaf', 'gewicht', 'ziele', 'rahmenbedingungen', 'auswertung', 'alles'] as const;
 
 export const CHAT_TOOLS: BetaTool[] = [
   {
@@ -132,7 +136,7 @@ export const CHAT_TOOLS: BetaTool[] = [
   {
     name: 'daten_abrufen',
     description:
-      'Liefert den AKTUELLEN Datenstand der App (der Datenstand im Systemprompt stammt vom Gesprächsbeginn). Bereiche: heute (Essen/Training/Schlaf heute + offene Makros), ernaehrung_14_tage, training (Kraftsätze der letzten 3 Wochen oder Verlauf einer Übung mit "uebung"), aktivitaeten (Läufe, Radfahrten, Schwimmen, Hyrox … der letzten 4 Wochen), plan_und_bedarf (Trainingsplan, Alltag, Tagesbedarf & Mahlzeiten-Timing heute), schlaf, gewicht, ziele, auswertung (automatischer Zielabgleich & Trends), alles.',
+      'Liefert den AKTUELLEN Datenstand der App (der Datenstand im Systemprompt stammt vom Gesprächsbeginn). Bereiche: heute (Essen/Training/Schlaf heute + offene Makros), ernaehrung_14_tage, training (Kraftsätze der letzten 3 Wochen oder Verlauf einer Übung mit "uebung"), aktivitaeten (Läufe, Radfahrten, Schwimmen, Hyrox … der letzten 4 Wochen), plan_und_bedarf (Trainingsplan mit IDs, Alltag, Tagesbedarf & Mahlzeiten-Timing heute), schlaf, gewicht, ziele, rahmenbedingungen (Pflicht-Regeln und ob sie eingehalten sind), auswertung (automatischer Zielabgleich & Trends), alles.',
     input_schema: {
       type: 'object',
       properties: {
@@ -144,9 +148,11 @@ export const CHAT_TOOLS: BetaTool[] = [
     },
     eager_input_streaming: true,
   },
+  ...ACTION_TOOLS,
 ];
 
 export const TOOL_LABELS: Record<string, string> = {
+  ...ACTION_LABELS,
   lebensmittel_suchen: '🔎 Bibliothek durchsucht',
   naehrwerte_berechnen: '🧮 Nährwerte berechnet',
   mahlzeit_eintragen: '📝 Ins Tagebuch eingetragen',
@@ -227,6 +233,7 @@ const fromTool = (x: z.infer<typeof Macros100>): Macros => ({
 
 async function execute(name: string, raw: unknown): Promise<string> {
   const today = getToday();
+  if (isAction(name.toLowerCase())) return executeAction(name.toLowerCase(), raw);
   // Toleranz: gleicher Name mit anderer Groß-/Kleinschreibung
   switch (name.toLowerCase()) {
     case 'lebensmittel_suchen': {
@@ -267,7 +274,8 @@ async function execute(name: string, raw: unknown): Promise<string> {
       const res = combine(resolved);
       const eatenToday = sumMacros(data.meals.filter((x) => x.date === today));
       const after = sumMacros([eatenToday, res.total]);
-      const g = data.goals;
+      // Ziel des heutigen Tages (nach Training & Alltag), nicht der Wochenschnitt
+      const g = dayNeeds(today, { ...needsInputOf(data, today), goals: data.goals }).targets;
       return [
         ...res.items.map((it, i) => `- ${it.name} ${fmt(it.amount)} ${resolved[i].unit} (${resolved[i].source}): ${macroLine(it.macros)}`),
         `SUMME: ${macroLine(res.total)}`,
@@ -294,7 +302,8 @@ async function execute(name: string, raw: unknown): Promise<string> {
       await db.meals.bulkAdd(rows);
       const day = sumMacros(await db.meals.where('date').equals(date).toArray());
       const data = await loadAppData();
-      return `Eingetragen am ${date} (${MEAL_LABELS[input.mahlzeit]}): ${rows.map((r) => `${r.name} ${fmt(r.amount)} ${r.unit}`).join(', ')}.\nTagessumme jetzt: ${macroLine(day)} (Ziel: ${macroLine(data.goals)}).`;
+      const target = dayNeeds(date, { ...needsInputOf(data, today), goals: data.goals }).targets;
+      return `Eingetragen am ${date} (${MEAL_LABELS[input.mahlzeit]}): ${rows.map((r) => `${r.name} ${fmt(r.amount)} ${r.unit}`).join(', ')}.\nTagessumme jetzt: ${macroLine(day)} (Tagesziel: ${macroLine(target)}).`;
     }
 
     case 'lebensmittel_speichern': {
@@ -337,6 +346,8 @@ async function execute(name: string, raw: unknown): Promise<string> {
           return describeWeight(data, today);
         case 'ziele':
           return describeGoals(data);
+        case 'rahmenbedingungen':
+          return describeRules(data);
         case 'auswertung':
           return describeAnalysis(runAnalysis(data, today));
         case 'alles':

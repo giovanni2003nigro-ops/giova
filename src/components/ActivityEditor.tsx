@@ -1,3 +1,4 @@
+import { InfoBang } from './InfoBang';
 import { useRef, useState } from 'react';
 import type { NewActivity } from '../activities';
 import { useObjectUrl } from '../hooks';
@@ -200,9 +201,15 @@ export function ActivityEditor({
         )}
       </div>
 
-      <div className="hint-box tnum">
-        <strong>+{fmt(preview)} Punkte</strong> · {POINTS_RULES[d.sport]}
-        {preview === 0 && durationSec > 0 && <div>⚠ Werte wirken unrealistisch (z. B. zu schnell) – dafür gibt es keine Punkte.</div>}
+      <div className="hint-box tnum row between">
+        <span>
+          <strong>+{fmt(preview)} Punkte</strong> · {POINTS_RULES[d.sport]}
+        </span>
+        {preview === 0 && durationSec > 0 && (
+          <InfoBang title="Keine Punkte" tone="warn">
+            <p>Die Werte wirken unrealistisch (z. B. zu schnell) – dafür gibt es keine Punkte.</p>
+          </InfoBang>
+        )}
       </div>
 
       <button className="btn primary block" onClick={submit} disabled={busy}>

@@ -296,9 +296,11 @@ export function analyze(input: AnalysisInput): AnalysisResult {
     const kcalShift = roundTo(Math.abs(diff) * KCAL_PER_KG_WEEK_PER_DAY, 50);
     const rateText = `${fmtSigned(actual, 2)} kg/Woche (Ziel ${fmtSigned(target, 2)} kg/Woche)`;
     const newTarget =
-      recommendedKcal != null && Math.abs(recommendedKcal - goals.kcal) >= 100
-        ? `Dein geschätzter echter Verbrauch liegt bei ~${fmt(actualTdee!)} kcal. Neues Kalorienziel für deine Wunschrate: ~${fmt(recommendedKcal)} kcal/Tag.`
-        : '';
+      goals.auto && actualTdee != null
+        ? `Dein gemessener Verbrauch (~${fmt(actualTdee)} kcal) ist schon in die automatischen Tagesziele eingerechnet.`
+        : recommendedKcal != null && Math.abs(recommendedKcal - goals.kcal) >= 100
+          ? `Dein geschätzter echter Verbrauch liegt bei ~${fmt(actualTdee!)} kcal. Neues Kalorienziel für deine Wunschrate: ~${fmt(recommendedKcal)} kcal/Tag.`
+          : '';
     let eta = '';
     if (goals.targetWeight && bodyWeight && Math.abs(actual) > 0.02) {
       const weeks = (goals.targetWeight - bodyWeight) / actual;
