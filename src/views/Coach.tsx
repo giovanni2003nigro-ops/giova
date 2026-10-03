@@ -24,8 +24,24 @@ const SUGGESTIONS = [
 
 /** Seiten mit Coach – Social Media (Feed, Beiträge, Profile) und Ranglisten bleiben außen vor. */
 export const COACH_PAGES: Partial<Record<RouteName, { label: string; suggestions: string[] }>> = {
+  ich: {
+    label: 'Ich (Übersicht)',
+    suggestions: ['Was soll ich heute essen und trainieren?', 'Wie war meine Woche? Was soll ich als Nächstes ändern?', 'Geh mit mir meine Ziele und meinen Plan durch.'],
+  },
+  einheiten: {
+    label: 'Training (Wochenplan & Einheiten)',
+    suggestions: ['Passt mein Trainingsplan zu meinem Ziel?', 'Trag einen 10-km-Lauf von heute in 52 Minuten ein.', 'Ich habe diese Woche wenig Zeit – kürz meinen Plan sinnvoll.'],
+  },
+  entwicklung: {
+    label: 'Entwicklung (Gewicht, Kraft, Ausdauer)',
+    suggestions: ['Wie entwickeln sich Gewicht, Kraft und Ausdauer?', 'Wo stagniere ich und was soll ich ändern?', 'Wie werde ich auf 10 km schneller?'],
+  },
+  analyse: {
+    label: 'Analyse',
+    suggestions: ['Erklär mir meine größte Abweichung und was ich tun soll.', 'Was läuft gut, was nicht?'],
+  },
   heute: {
-    label: 'Übersicht',
+    label: 'Heute',
     suggestions: ['Wie war meine Woche? Was soll ich als Nächstes ändern?', 'Was esse ich heute noch, um meine Makros zu treffen?', 'Bin ich auf Kurs zu meinem Ziel?'],
   },
   essen: {
@@ -76,23 +92,24 @@ export function CoachView() {
 }
 
 /** Coach als Overlay auf jeder erlaubten Seite. */
-export function CoachSheet({ route, onClose }: { route: Route; onClose: () => void }) {
+export function CoachSheet({ route, question, onClose }: { route: Route; question?: string; onClose: () => void }) {
   return (
     <div className="sheet-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="sheet coach-sheet" role="dialog" aria-modal="true" aria-label="KI-Coach">
         <div className="sheet-grip" />
-        <CoachChat route={route} onClose={onClose} />
+        <CoachChat route={route} question={question} onClose={onClose} />
       </div>
     </div>
   );
 }
 
-function CoachChat({ route, onClose }: { route: Route; onClose?: () => void }) {
+function CoachChat({ route, question, onClose }: { route: Route; question?: string; onClose?: () => void }) {
   const page = COACH_PAGES[route.name] ?? COACH_PAGES.coach!;
   const apiKey = useApiKey();
   const activeId = useKV<number | null>('activeChat', null);
   const chat = useLiveQuery(async () => (activeId ? await db.chats.get(activeId) : undefined), [activeId]);
-  const [text, setText] = useState('');
+  // Vorbelegte Frage (z. B. aus der Einrichtung) – wird erst mit „Senden“ abgeschickt
+  const [text, setText] = useState(question ?? '');
   const [image, setImage] = useState<Blob | undefined>();
   const [busy, setBusy] = useState(false);
   const [streaming, setStreaming] = useState('');

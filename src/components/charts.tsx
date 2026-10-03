@@ -63,9 +63,13 @@ interface LineChartProps {
   unit?: string;
   digits?: number;
   zeroBased?: boolean;
+  /** Eigene Darstellung der Werte (z. B. Pace als 4:52) */
+  format?: (v: number) => string;
+  /** Kleinere Werte oben (Pace: schneller = höher) */
+  invert?: boolean;
 }
 
-export function LineChart({ series, ariaLabel, height = 180, target, unit = '', digits = 1, zeroBased = false }: LineChartProps) {
+export function LineChart({ series, ariaLabel, height = 180, target, unit = '', digits = 1, zeroBased = false, format, invert = false }: LineChartProps) {
   const [ref, width] = useWidth();
   const [hover, setHover] = useState<ISODate | null>(null);
 
@@ -82,8 +86,10 @@ export function LineChart({ series, ariaLabel, height = 180, target, unit = '', 
   const innerW = Math.max(10, width - PAD.left - PAD.right);
   const innerH = height - PAD.top - PAD.bottom;
   const sx = (d: ISODate) => PAD.left + (allX.length === 1 ? innerW / 2 : (diffDays(x0, d) / span) * innerW);
-  const sy = (v: number) => PAD.top + innerH - ((v - yMin) / (yMax - yMin || 1)) * innerH;
+  const frac = (v: number) => (v - yMin) / (yMax - yMin || 1);
+  const sy = (v: number) => (invert ? PAD.top + frac(v) * innerH : PAD.top + innerH - frac(v) * innerH);
   const td = tickDigits(yTicks);
+  const show = (v: number) => (format ? format(v) : `${fmt(v, digits)}${unit}`);
 
   const xTickCount = Math.min(allX.length, width < 360 ? 3 : 5);
   const xTicks =
@@ -126,7 +132,7 @@ export function LineChart({ series, ariaLabel, height = 180, target, unit = '', 
             <g key={t}>
               <line className="grid-line" x1={PAD.left} x2={width - PAD.right} y1={sy(t)} y2={sy(t)} />
               <text className="tick" x={PAD.left - 6} y={sy(t) + 4} textAnchor="end">
-                {compact(t, td)}
+                {format ? format(t) : compact(t, td)}
               </text>
             </g>
           ))}
@@ -191,10 +197,7 @@ export function LineChart({ series, ariaLabel, height = 180, target, unit = '', 
               return p ? (
                 <div className="tt-row" key={s.key}>
                   <span className="line-key" style={{ background: s.color }} />
-                  <strong>
-                    {fmt(p.y, digits)}
-                    {unit}
-                  </strong>
+                  <strong>{show(p.y)}</strong>
                   <span className="muted">{s.label}</span>
                 </div>
               ) : null;
@@ -219,7 +222,7 @@ export function LineChart({ series, ariaLabel, height = 180, target, unit = '', 
                 <td>{formatDateShort(d)}</td>
                 {series.map((s) => {
                   const p = s.points.find((q) => q.x === d);
-                  return <td key={s.key}>{p ? `${fmt(p.y, digits)}${unit}` : '–'}</td>;
+                  return <td key={s.key}>{p ? show(p.y) : '–'}</td>;
                 })}
               </tr>
             ))}

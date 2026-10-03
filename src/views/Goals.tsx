@@ -409,7 +409,7 @@ function StrengthGoalsCard({
   );
 }
 
-function WeightCard({ today, goals }: { today: string; goals: Goals }) {
+export function WeightCard({ today, goals }: { today: string; goals: Goals }) {
   const entries = useLiveQuery(() => db.weights.orderBy('date').toArray(), []) ?? [];
   const data = useAppData();
   const analysis = useAnalysis(data);

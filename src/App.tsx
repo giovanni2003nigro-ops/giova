@@ -1,13 +1,16 @@
 import { useEffect, useState, type ComponentType, type SVGProps } from 'react';
 import { useMedalWatcher } from './activities';
-import { IconBack, IconFood, IconSparkle, IconGear, IconHome, IconPlus, IconTrophy, IconUser, IconUsers } from './components/icons';
+import { openCoach } from './coachBus';
+import { IconBack, IconGear, IconGrid, IconPlus, IconSparkle, IconTrophy, IconUser, IconUsers } from './components/icons';
 import { NoticesButton } from './components/Notices';
+import { db, getKV } from './db';
 import { Toaster, toast } from './components/ui';
 import { navigate, useRoute, type RouteName } from './hooks';
 import { formatClock } from './lib/sports';
 import { restoreDraft, useTracker } from './trackerStore';
 import { AccountView } from './views/Account';
 import { ActivityDetailView } from './views/ActivityDetail';
+import { AnalysisView } from './views/Analysis';
 import { AthleteView } from './views/Athlete';
 import { COACH_PAGES, CoachSheet, CoachView } from './views/Coach';
 import { DashboardView } from './views/Dashboard';
@@ -15,30 +18,39 @@ import { FeedView } from './views/Feed';
 import { GoalsView } from './views/Goals';
 import { ImportView } from './views/Import';
 import { LeaguesView } from './views/Leagues';
+import { MeView } from './views/Me';
+import { OnboardingView } from './views/Onboarding';
 import { MedalsView } from './views/Medals';
 import { NutritionView } from './views/Nutrition';
 import { PlanView } from './views/Plan';
 import { PostView } from './views/Post';
+import { ProgressView } from './views/Progress';
 import { ProfileView } from './views/Profile';
 import { RecordView } from './views/Record';
 import { SettingsView } from './views/Settings';
 import { SleepView } from './views/Sleep';
 import { TrackerView } from './views/Tracker';
 import { TrainingView } from './views/Training';
+import { TrainingHubView } from './views/TrainingHub';
 
 type Icon = ComponentType<SVGProps<SVGSVGElement>>;
 
+// „Ich“ bündelt Heute, Essen, Training, Entwicklung, Analyse und Coach in Kacheln
 const NAV: { name: RouteName; label: string; Icon: Icon; primary?: boolean }[] = [
-  { name: 'heute', label: 'Heute', Icon: IconHome },
+  { name: 'ich', label: 'Ich', Icon: IconGrid },
   { name: 'feed', label: 'Feed', Icon: IconUsers },
   { name: 'aufzeichnen', label: 'Aufzeichnen', Icon: IconPlus, primary: true },
-  { name: 'ligen', label: 'Ligen', Icon: IconTrophy },
-  { name: 'essen', label: 'Essen', Icon: IconFood },
+  { name: 'ligen', label: 'Liga', Icon: IconTrophy },
   { name: 'profil', label: 'Profil', Icon: IconUser },
 ];
 
 const TITLES: Record<RouteName, string> = {
-  heute: 'Übersicht',
+  ich: 'Ich',
+  heute: 'Heute',
+  einheiten: 'Training',
+  entwicklung: 'Entwicklung',
+  analyse: 'Analyse',
+  start: 'Einrichtung',
   feed: 'Feed',
   aufzeichnen: 'Aufzeichnen',
   ligen: 'Ligen',
@@ -61,16 +73,22 @@ const TITLES: Record<RouteName, string> = {
 
 /** Unterseiten gehören zu einem Tab der Navigation. */
 const PARENT: Partial<Record<RouteName, RouteName>> = {
-  training: 'aufzeichnen',
+  heute: 'ich',
+  essen: 'ich',
+  einheiten: 'ich',
+  entwicklung: 'ich',
+  analyse: 'ich',
+  start: 'ich',
+  training: 'ich',
   tracker: 'aufzeichnen',
   import: 'aufzeichnen',
-  schlaf: 'profil',
-  ziele: 'profil',
+  schlaf: 'ich',
+  ziele: 'ich',
   medaillen: 'ligen',
-  plan: 'profil',
+  plan: 'ich',
   konto: 'profil',
   einstellungen: 'profil',
-  coach: 'heute',
+  coach: 'ich',
   aktivitaet: 'profil',
   post: 'feed',
   athlet: 'feed',
@@ -83,11 +101,26 @@ export function App() {
   const isSub = !!PARENT[route.name];
   // Coach überall – außer Social Media (Feed, Beiträge, Profile) und Ranglisten
   const coachHere = route.name !== 'coach' && !!COACH_PAGES[route.name];
-  const [coachOpen, setCoachOpen] = useState(false);
+  const [coachOpen, setCoachOpen] = useState<{ question?: string } | null>(null);
   useMedalWatcher();
   useEffect(() => {
-    if (!coachHere) setCoachOpen(false);
+    if (!coachHere) setCoachOpen(null);
   }, [coachHere]);
+  // Kacheln und andere Stellen öffnen den Coach über ein Ereignis
+  useEffect(() => {
+    const on = (e: Event) => setCoachOpen({ question: (e as CustomEvent<string | undefined>).detail });
+    window.addEventListener('open-coach', on);
+    return () => window.removeEventListener('open-coach', on);
+  }, []);
+  const focus = route.name === 'start';
+
+  // Ganz neu in der App? Dann zuerst die geführte Einrichtung
+  useEffect(() => {
+    void (async () => {
+      const [onboarded, profile, meals, acts] = await Promise.all([getKV<boolean>('onboarded', false), getKV('profile', null), db.meals.count(), db.activities.count()]);
+      if (!onboarded && !profile && !meals && !acts && !window.location.hash.replace(/^#\/?/, '')) navigate('start');
+    })();
+  }, []);
 
   useEffect(() => {
     void restoreDraft().then((restored) => {
@@ -115,7 +148,7 @@ export function App() {
         <div className="row" style={{ gap: 0 }}>
           <NoticesButton page={route.name} />
           {coachHere && (
-            <button className="icon-btn coach-btn" onClick={() => setCoachOpen(true)} aria-label="KI-Coach öffnen">
+            <button className="icon-btn coach-btn" onClick={() => openCoach()} aria-label="KI-Coach öffnen">
               <IconSparkle />
             </button>
           )}
@@ -130,9 +163,14 @@ export function App() {
           {tracker.distanceM > 0 && ` · ${(tracker.distanceM / 1000).toFixed(2).replace('.', ',')} km`}
         </button>
       )}
-      {coachOpen && coachHere && <CoachSheet route={route} onClose={() => setCoachOpen(false)} />}
+      {coachOpen && coachHere && <CoachSheet route={route} question={coachOpen.question} onClose={() => setCoachOpen(null)} />}
       <main>
+        {route.name === 'ich' && <MeView />}
         {route.name === 'heute' && <DashboardView />}
+        {route.name === 'einheiten' && <TrainingHubView />}
+        {route.name === 'entwicklung' && <ProgressView />}
+        {route.name === 'analyse' && <AnalysisView />}
+        {route.name === 'start' && <OnboardingView />}
         {route.name === 'feed' && <FeedView />}
         {route.name === 'aufzeichnen' && <RecordView />}
         {route.name === 'ligen' && <LeaguesView />}
@@ -152,7 +190,7 @@ export function App() {
         {route.name === 'post' && <PostView key={route.id} id={route.id} />}
         {route.name === 'athlet' && <AthleteView key={route.id} id={route.id} />}
       </main>
-      <nav className="nav" aria-label="Hauptnavigation">
+      <nav className="nav" aria-label="Hauptnavigation" hidden={focus}>
         <div className="nav-inner">
           {NAV.map(({ name, label, Icon, primary }) => (
             <button key={name} className={primary ? 'primary' : ''} aria-current={active === name ? 'page' : undefined} onClick={() => navigate(name)}>

@@ -1,18 +1,50 @@
-import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useMemo, useState } from 'react';
+import { liveQuery } from 'dexie';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { loadAppData, type AppData } from './ai/context';
 import { useKV } from './db';
 import { analyze, type AnalysisResult } from './lib/analysis';
 import { today } from './lib/dates';
 
+// Ein gemeinsames Abo für alle Komponenten: Kopfzeile (!) und Seite laden die Daten nicht doppelt
+const appStore: { data?: AppData; sub?: { unsubscribe(): void }; listeners: Set<() => void> } = { listeners: new Set() };
+
+function subscribeAppData(onChange: () => void) {
+  appStore.listeners.add(onChange);
+  if (!appStore.sub)
+    appStore.sub = liveQuery(loadAppData).subscribe({
+      next: (d) => {
+        appStore.data = d;
+        appStore.listeners.forEach((l) => l());
+      },
+      error: (err) => console.error(err),
+    });
+  return () => {
+    appStore.listeners.delete(onChange);
+    if (appStore.listeners.size === 0) {
+      appStore.sub?.unsubscribe();
+      appStore.sub = undefined;
+    }
+  };
+}
+
 /** Alle Daten der App – aktualisiert sich automatisch bei Änderungen. */
 export function useAppData(): AppData | undefined {
-  return useLiveQuery(loadAppData, []);
+  return useSyncExternalStore(subscribeAppData, () => appStore.data);
 }
+
+// Auswertung pro Datenstand nur einmal berechnen, egal wie viele Komponenten sie brauchen
+const analysisCache = new WeakMap<AppData, { t: string; result: AnalysisResult }>();
 
 export function useAnalysis(data: AppData | undefined): AnalysisResult | undefined {
   const t = useToday();
-  return useMemo(() => (data ? analyze({ today: t, ...data }) : undefined), [data, t]);
+  return useMemo(() => {
+    if (!data) return undefined;
+    const hit = analysisCache.get(data);
+    if (hit?.t === t) return hit.result;
+    const result = analyze({ today: t, ...data });
+    analysisCache.set(data, { t, result });
+    return result;
+  }, [data, t]);
 }
 
 export function useApiKey(): string | undefined {
@@ -39,7 +71,12 @@ export function useObjectUrl(blob: Blob | undefined): string | undefined {
 }
 
 export type RouteName =
+  | 'ich'
   | 'heute'
+  | 'einheiten'
+  | 'entwicklung'
+  | 'analyse'
+  | 'start'
   | 'feed'
   | 'aufzeichnen'
   | 'ligen'
@@ -60,7 +97,12 @@ export type RouteName =
   | 'athlet';
 
 const ROUTES: RouteName[] = [
+  'ich',
   'heute',
+  'einheiten',
+  'entwicklung',
+  'analyse',
+  'start',
   'feed',
   'aufzeichnen',
   'ligen',
@@ -90,7 +132,7 @@ export interface Route {
 
 export function parseHash(hash: string): Route {
   const [name, ...rest] = hash.replace(/^#\/?/, '').split('/');
-  if (!ROUTES.includes(name as RouteName)) return { name: 'heute' };
+  if (!ROUTES.includes(name as RouteName)) return { name: 'ich' };
   const id = rest.join('/');
   return id ? { name: name as RouteName, id: decodeURIComponent(id) } : { name: name as RouteName };
 }

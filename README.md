@@ -5,6 +5,8 @@ Plattform für Sportarten, die man meistens allein macht – **Laufen, Radfahren
 Die App läuft als Web-App (PWA) im Browser und lässt sich auf dem Handy wie eine App installieren.
 
 <p>
+  <img src="docs/screenshots/dark-00-ich.png" width="200" alt="Ich: alles auf einen Blick">
+  <img src="docs/screenshots/ob-zusammenhang.png" width="200" alt="Einrichtung: so entsteht der Tagesbedarf">
   <img src="docs/screenshots/dark-08-beitraege.png" width="200" alt="Sport-Beiträge">
   <img src="docs/screenshots/dark-04-aktivitaet.png" width="200" alt="Aktivität mit Karte">
   <img src="docs/screenshots/story-dark.png" width="200" alt="Story-Bild zum Teilen">
@@ -16,6 +18,23 @@ Die App läuft als Web-App (PWA) im Browser und lässt sich auf dem Handy wie ei
 **Hinweise erst auf Wunsch:** Vorschläge und Warnungen stehen nicht mehr überall auf den Seiten. Gibt es welche, erscheint oben ein **(!)** mit der Anzahl, und erst ein Tipp darauf zeigt sie. Dasselbe gilt für Hinweise in einzelnen Karten (z. B. im Tagesplan oder beim Satz-Vorschlag).
 
 ## Funktionen
+
+### „Ich“ – alles auf einen Blick
+Unten links in der Navigation (**Ich · Feed · + · Liga · Profil**) liegt die eigene Startseite – aufgebaut wie eine For-You-Page aus Kacheln. Jede Kachel zeigt das Wichtigste live und führt zur ausführlichen Seite:
+
+| Kachel | Vorschau | Seite |
+|---|---|---|
+| **Heute** | Kalorienring, Training des Tages | Essen & Training heute, Schlaf, Gewicht, Schnellstart |
+| **Essen** | Protein/KH/Fett gegen das Tagesziel | Tagebuch, Tagesbedarf, KI-Rezepte, Foto-Scan |
+| **Training** | Wochenpunkte (erledigt/geplant) | Woche aus Plan + Erledigtem, Aufzeichnen, Kraft, letzte Einheiten |
+| **Entwicklung** | Gewichtsverlauf, Kraft, km der Woche | Gewicht, Kraft (e1RM je Übung), Ausdauer (km/Woche, Tempo) |
+| **Analyse** | Zielerreichung in % | Abweichungen zum Aufklappen, Zusammenhänge, KI-Coach-Analyse |
+| **KI-Coach** | – | Chat für alle Fragen |
+
+Darunter: Schlaf, Ziele und Plan als kleine Kacheln. Alle bisherigen Funktionen sind erhalten, nur übersichtlicher sortiert.
+
+### Geführte Einrichtung
+Beim ersten Start führt die App Schritt für Schritt durch **Körper → Ziel (mit Tempo-Regler im erlaubten Rahmen) → Sportarten & Trainingstage → Alltag → Trainingsplan** (eigener Plan, ein automatisch erstellter Startplan oder später). Animationen erklären die Zusammenhänge: ein Schaubild, wie Ziel, Training, Alltag und Körper in den Tagesbedarf fließen, ein Wasserfall *Grundumsatz + Alltag + Training ± Ziel = Tagesbedarf* und die Wochenbalken je Tag. Danach lässt sich alles mit dem KI-Coach feinjustieren. Wiederholen über *Profil → Einrichtung*.
 
 ### Aufzeichnen
 - **Live-Tracker mit GPS** für Laufen, Radfahren, Wandern und Rudern: Karte, Zeit, Distanz, aktuelle und durchschnittliche Pace, Auto-Pause, Kilometer-Ansage. Für Schwimmen und Hyrox läuft eine Stoppuhr. Die Aufzeichnung läuft weiter, wenn du in der App die Seite wechselst, und übersteht ein Neuladen.
