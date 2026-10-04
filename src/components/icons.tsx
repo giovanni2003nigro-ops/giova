@@ -256,3 +256,22 @@ export const IconFile = (p: P) => (
     <path d="M14 3v5h5" />
   </svg>
 );
+export const IconGrid = (p: P) => (
+  <svg {...base(p)}>
+    <rect x="3.5" y="3.5" width="7" height="7" rx="2" />
+    <rect x="13.5" y="3.5" width="7" height="7" rx="2" />
+    <rect x="3.5" y="13.5" width="7" height="7" rx="2" />
+    <rect x="13.5" y="13.5" width="7" height="7" rx="2" />
+  </svg>
+);
+export const IconTrend = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M3 17l6-6 4 4 8-8" />
+    <path d="M15 7h6v6" />
+  </svg>
+);
+export const IconPulse = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M3 12h4l3-8 4 16 3-8h4" />
+  </svg>
+);

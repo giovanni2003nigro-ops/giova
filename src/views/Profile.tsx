@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { getProfileSummary, useCloudQuery, useMyProfile } from '../cloud/api';
 import { cloudEnabled } from '../cloud/client';
 import { ActivityCard, fromLocal } from '../components/activity';
-import { IconCalendar, IconChat, IconChevronRight, IconDumbbell, IconGear, IconMedal, IconMoon, IconTarget, IconUser } from '../components/icons';
+import { IconCalendar, IconChat, IconChevronRight, IconDumbbell, IconGear, IconMedal, IconMoon, IconSparkle, IconTarget, IconUser } from '../components/icons';
 import { Avatar, TierBadge } from '../components/people';
 import { Card } from '../components/ui';
 import { db, useKV } from '../db';
@@ -16,6 +16,7 @@ import { fmt } from '../lib/stats';
 import type { Profile, Sport } from '../types';
 
 const LINKS = [
+  { href: '#/start', label: 'Einrichtung', sub: 'Ziele, Alltag und Training Schritt für Schritt – mit Erklärung', Icon: IconSparkle },
   { href: '#/plan', label: 'Trainingsplan & Alltag', sub: 'Grundlage für deinen KI-Ernährungsplan', Icon: IconCalendar },
   { href: '#/ziele', label: 'Ziele & Körper', sub: 'Ziel, Kalorien, Gewicht, Kraftziele', Icon: IconTarget },
   { href: '#/schlaf', label: 'Schlaf', sub: 'Dauer, Qualität, Regelmäßigkeit', Icon: IconMoon },

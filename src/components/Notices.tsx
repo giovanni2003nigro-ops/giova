@@ -6,7 +6,10 @@ import { RecommendationItem, Sheet } from './ui';
 
 /** Welche Hinweise gehören zu welcher Seite (Übersicht zeigt alle). */
 const PAGE_AREAS: Partial<Record<RouteName, Area[] | 'all'>> = {
+  ich: 'all',
   heute: 'all',
+  einheiten: ['training'],
+  entwicklung: ['gewicht', 'training'],
   essen: ['ernaehrung', 'gewicht'],
   training: ['training'],
   aufzeichnen: ['training'],

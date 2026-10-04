@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import type { Recommendation } from '../lib/analysis';
 import { SEVERITY_LABELS } from '../lib/analysis';
 import { addDays, relativeDay, today } from '../lib/dates';
@@ -91,18 +92,26 @@ export function Stat({ label, value, unit, delta, tile = false }: { label: strin
   );
 }
 
+let openSheets = 0;
+
 export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  // Neueste onClose-Funktion merken, ohne den Effekt bei jedem Rendern neu zu starten
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && closeRef.current();
     window.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
+    openSheets++;
     document.body.style.overflow = 'hidden';
     return () => {
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
+      // Erst wenn das letzte Fenster zu ist, darf die Seite wieder scrollen
+      if (--openSheets === 0) document.body.style.overflow = '';
     };
-  }, [onClose]);
-  return (
+  }, []);
+  // Immer direkt in <body> rendern: In der Kopfzeile (backdrop-filter) oder in Karten würde „position: fixed“
+  // sonst am Elternelement hängen bleiben – das Fenster wäre abgeschnitten und die Seite blockiert.
+  return createPortal(
     <div className="sheet-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>
         <div className="sheet-grip" />
@@ -114,7 +123,8 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
         </div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
