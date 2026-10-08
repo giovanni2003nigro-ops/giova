@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { saveActivity, useShareDefault } from '../activities';
 import { ActivityEditor } from '../components/ActivityEditor';
-import { IconPause, IconPlay, IconStop } from '../components/icons';
+import { IconLock, IconPause, IconPlay, IconStop } from '../components/icons';
 import { RouteMap } from '../components/RouteMap';
 import { InfoBang } from '../components/InfoBang';
 import { Card, ErrorBox, Sheet, toast } from '../components/ui';
@@ -26,6 +26,7 @@ import {
 } from '../trackerStore';
 import type { Sport } from '../types';
 import { SPORTS } from '../types';
+import { SportIcon } from '../components/SportIcon';
 
 function paceText(sport: Sport, speed: number | null): string {
   if (!speed || speed <= 0.2) return '–';
@@ -50,6 +51,7 @@ export function TrackerView({ sportParam }: { sportParam?: string }) {
   const [sport, setSport] = useState<Sport>(s.status === 'idle' ? initialSport : s.sport);
   const [finished, setFinished] = useState<TrackerState | null>(null);
   const [, setNow] = useState(0);
+  const [pocket, setPocket] = useState(false);
   const def = SPORT_DEFS[sport];
 
   useEffect(() => {
@@ -87,133 +89,167 @@ export function TrackerView({ sportParam }: { sportParam?: string }) {
     setFinished(null);
   };
 
+  const live = s.status !== 'idle';
+  const distValue = s.distanceM >= 1000 ? fmt(s.distanceM / 1000, 2) : fmt(s.distanceM);
+  const distUnit = s.distanceM >= 1000 ? 'km' : 'm';
+  const statusText = s.status === 'paused' ? 'Pausiert' : s.autoPaused ? 'Auto-Pause' : live ? 'Aufzeichnung läuft' : 'Bereit';
+
   return (
-    <div className="content tracker">
-      {s.status === 'idle' && (
-        <div className="chips" role="group" aria-label="Sportart">
-          {SPORTS.filter((x) => SPORT_DEFS[x].gps || x === 'schwimmen' || x === 'hyrox').map((x) => (
-            <button key={x} className="chip" aria-pressed={x === sport} onClick={() => setSport(x)}>
-              {SPORT_DEFS[x].emoji} {SPORT_DEFS[x].label}
-            </button>
-          ))}
+    <div className={`tracker2 ${def.gps ? 'with-map' : ''}`}>
+      {def.gps && (
+        <div className="tk-map">
+          <RouteMap points={route} live height={live ? '48vh' : '38vh'} />
+          <div className="tk-overlay">
+            <span className="tk-pill">
+              <SportIcon sport={def.key} size={15} /> {def.label}
+            </span>
+            {gpsLabel && (
+              <span className="tk-pill">
+                <span className="status-dot" style={{ background: acc != null && acc <= 20 ? 'var(--good)' : acc != null && acc <= 35 ? 'var(--warning)' : 'var(--critical)' }} />
+                {gpsLabel}
+              </span>
+            )}
+          </div>
         </div>
       )}
 
-      {def.gps && <RouteMap points={route} live height={s.status === 'idle' ? 220 : 280} />}
+      <div className="tk-panel">
+        {!live && (
+          <div className="chips tk-sports" role="group" aria-label="Sportart">
+            {SPORTS.filter((x) => SPORT_DEFS[x].gps || x === 'schwimmen' || x === 'hyrox').map((x) => (
+              <button key={x} className="chip" aria-pressed={x === sport} onClick={() => setSport(x)}>
+                <SportIcon sport={x} /> {SPORT_DEFS[x].label}
+              </button>
+            ))}
+          </div>
+        )}
 
-      {gpsError && <ErrorBox>{gpsError}</ErrorBox>}
+        {gpsError && <ErrorBox>{gpsError}</ErrorBox>}
 
-      <Card>
-        <div className="row between">
-          <span className="badge">
-            {def.emoji} {def.label}
-          </span>
-          {gpsLabel && (
-            <span className="badge">
-              <span className="status-dot" style={{ background: acc != null && acc <= 20 ? 'var(--good)' : acc != null && acc <= 35 ? 'var(--warning)' : 'var(--critical)' }} />
-              {gpsLabel}
-            </span>
-          )}
+        <div className={`tk-status ${s.status}`}>
+          <span className="tk-dot" /> {statusText}
         </div>
-        <div className="tracker-time tnum" aria-live="off">
+        <div className="tk-time tnum" aria-live="off">
           {formatClock(s.movingMs / 1000)}
         </div>
-        {s.autoPaused && <div className="badge" style={{ alignSelf: 'center' }}>Auto-Pause</div>}
-        {s.status === 'paused' && <div className="badge" style={{ alignSelf: 'center' }}>Pausiert</div>}
         {def.gps && (
-          <div className="grid-3 tracker-stats">
-            <div className="stat">
-              <span className="label">Distanz</span>
-              <span className="value tnum">{s.distanceM >= 1000 ? fmt(s.distanceM / 1000, 2) : fmt(s.distanceM)}</span>
-              <span className="delta">{s.distanceM >= 1000 ? 'km' : 'm'}</span>
+          <div className="tk-stats">
+            <div>
+              <span className="tk-value tnum">{distValue}</span>
+              <span className="tk-label">{distUnit}</span>
             </div>
-            <div className="stat">
-              <span className="label">Aktuell</span>
-              <span className="value tnum">{paceText(sport, speed)}</span>
-              <span className="delta">{paceUnit(sport)}</span>
+            <div>
+              <span className="tk-value tnum">{paceText(sport, speed)}</span>
+              <span className="tk-label">aktuell {paceUnit(sport)}</span>
             </div>
-            <div className="stat">
-              <span className="label">Ø</span>
-              <span className="value tnum">{paceText(sport, avgSpeed)}</span>
-              <span className="delta">{paceUnit(sport)}</span>
+            <div>
+              <span className="tk-value tnum">{paceText(sport, avgSpeed)}</span>
+              <span className="tk-label">Ø {paceUnit(sport)}</span>
             </div>
           </div>
         )}
-      </Card>
+        {(s.backgroundMs ?? 0) > 60_000 && (
+          <p className="tiny muted tk-note">
+            {formatClock((s.backgroundMs ?? 0) / 1000)} im Hintergrund ohne GPS – die Strecke dazwischen ist als Luftlinie ergänzt. Mit dem Taschenmodus läuft GPS durch.
+          </p>
+        )}
 
-      <div className="tracker-controls">
-        {s.status === 'idle' && (
-          <button className="big-round start" onClick={() => startTracking(sport)} aria-label="Aufzeichnung starten">
-            <IconPlay />
-            <span>Start</span>
-          </button>
-        )}
-        {s.status === 'running' && (
-          <button className="big-round" onClick={pauseTracking} aria-label="Pausieren">
-            <IconPause />
-            <span>Pause</span>
-          </button>
-        )}
-        {s.status === 'paused' && (
-          <>
-            <button className="big-round start" onClick={resumeTracking} aria-label="Weiter">
+        <div className="tracker-controls">
+          {live && (
+            <button className="round-sm" onClick={() => setPocket(true)} aria-label="Taschenmodus">
+              <IconLock />
+            </button>
+          )}
+          {s.status === 'idle' && (
+            <button className="big-round start" onClick={() => startTracking(sport)} aria-label="Aufzeichnung starten">
               <IconPlay />
-              <span>Weiter</span>
+              <span>Start</span>
             </button>
-            <button className="big-round stop" onClick={finish} aria-label="Beenden">
-              <IconStop />
-              <span>Beenden</span>
+          )}
+          {s.status === 'running' && (
+            <button className="big-round" onClick={pauseTracking} aria-label="Pausieren">
+              <IconPause />
+              <span>Pause</span>
             </button>
-          </>
+          )}
+          {s.status === 'paused' && (
+            <>
+              <button className="big-round start" onClick={resumeTracking} aria-label="Weiter">
+                <IconPlay />
+                <span>Weiter</span>
+              </button>
+              <button className="big-round stop" onClick={finish} aria-label="Beenden">
+                <IconStop />
+                <span>Beenden</span>
+              </button>
+            </>
+          )}
+          {live && <span className="round-sm placeholder" aria-hidden="true" />}
+        </div>
+      </div>
+
+      <div className="content tk-below">
+        {s.status === 'idle' && (
+          <Card>
+            <label className="check">
+              <input type="checkbox" checked={s.autoPause} onChange={(e) => setAutoPause(e.target.checked)} />
+              Auto-Pause (hält die Zeit an, wenn du stehst)
+            </label>
+            <div className="row between">
+              <label className="check">
+                <input type="checkbox" checked={voice ?? true} onChange={(e) => setKV('trackerVoice', e.target.checked)} />
+                Kilometer-Ansage
+              </label>
+              <InfoBang title="Aufzeichnen, ohne dass GPS abbricht">
+                <p>
+                  Browser-Apps dürfen GPS nur nutzen, solange sie sichtbar sind. Sperrst du das Handy oder wechselst die App, pausiert das GPS – die Zeit läuft weiter
+                  und die Strecke wird beim Zurückkommen als Luftlinie ergänzt.
+                </p>
+                <p>
+                  <strong>Tipp:</strong> Starte nach dem Loslaufen den <strong>Taschenmodus</strong> (Schloss-Symbol). Der Bildschirm wird schwarz, Berührungen sind
+                  gesperrt und GPS läuft ohne Lücke weiter. Für sehr lange Einheiten ist die Uhr mit Import (Garmin/FIT) am zuverlässigsten.
+                </p>
+              </InfoBang>
+            </div>
+          </Card>
+        )}
+
+        {laps.length > 0 && (
+          <Card title="Kilometer">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>km</th>
+                  <th>Zeit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...laps].reverse().map((l) => (
+                  <tr key={l.index}>
+                    <td>{l.index}</td>
+                    <td>{formatClock(l.durationSec)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Card>
+        )}
+
+        {live && (
+          <button className="btn ghost danger" onClick={discard}>
+            Aufzeichnung verwerfen
+          </button>
         )}
       </div>
 
-      {s.status === 'idle' && (
-        <Card>
-          <label className="check">
-            <input type="checkbox" checked={s.autoPause} onChange={(e) => setAutoPause(e.target.checked)} />
-            Auto-Pause (hält die Zeit an, wenn du stehst)
-          </label>
-          <div className="row between">
-            <label className="check">
-              <input type="checkbox" checked={voice ?? true} onChange={(e) => setKV('trackerVoice', e.target.checked)} />
-              Kilometer-Ansage
-            </label>
-            <InfoBang title="Tipp zur Aufzeichnung">
-              <p>
-                Der Bildschirm bleibt während der Aufzeichnung an. Sperrst du das Handy oder wechselst die App, kann der Browser das GPS anhalten – für lange
-                Einheiten ist die Aufzeichnung mit der Uhr und der Import (Garmin/FIT) am zuverlässigsten.
-              </p>
-            </InfoBang>
-          </div>
-        </Card>
-      )}
-
-      {laps.length > 0 && (
-        <Card title="Kilometer">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>km</th>
-                <th>Zeit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...laps].reverse().map((l) => (
-                <tr key={l.index}>
-                  <td>{l.index}</td>
-                  <td>{formatClock(l.durationSec)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-      )}
-
-      {s.status !== 'idle' && (
-        <button className="btn ghost danger" onClick={discard}>
-          Aufzeichnung verwerfen
-        </button>
+      {pocket && live && (
+        <PocketMode
+          time={formatClock(s.movingMs / 1000)}
+          dist={def.gps ? `${distValue} ${distUnit}` : null}
+          pace={def.gps ? `${paceText(sport, avgSpeed)} ${paceUnit(sport)}` : null}
+          status={statusText}
+          onExit={() => setPocket(false)}
+        />
       )}
 
       {finished && (
@@ -226,6 +262,46 @@ export function TrackerView({ sportParam }: { sportParam?: string }) {
           }}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * Taschenmodus: schwarzer Bildschirm mit großen Werten, Berührungen gesperrt.
+ * Die App bleibt im Vordergrund – so läuft GPS ohne Unterbrechung weiter.
+ * Entsperren: Knopf 1 Sekunde gedrückt halten.
+ */
+function PocketMode({ time, dist, pace, status, onExit }: { time: string; dist: string | null; pace: string | null; status: string; onExit: () => void }) {
+  const [hold, setHold] = useState(false);
+  useEffect(() => {
+    if (!hold) return;
+    const id = setTimeout(onExit, 1000);
+    return () => clearTimeout(id);
+  }, [hold, onExit]);
+  useEffect(() => {
+    const el = document.documentElement;
+    void el.requestFullscreen?.().catch(() => undefined);
+    return () => {
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+    };
+  }, []);
+  return (
+    <div className="pocket" role="dialog" aria-modal="true" aria-label="Taschenmodus" onContextMenu={(e) => e.preventDefault()}>
+      <div className="pocket-status">{status}</div>
+      <div className="pocket-time tnum">{time}</div>
+      {dist && <div className="pocket-value tnum">{dist}</div>}
+      {pace && <div className="pocket-sub tnum">Ø {pace}</div>}
+      <button
+        className={`pocket-unlock ${hold ? 'holding' : ''}`}
+        onPointerDown={() => setHold(true)}
+        onPointerUp={() => setHold(false)}
+        onPointerLeave={() => setHold(false)}
+        onPointerCancel={() => setHold(false)}
+        aria-label="Zum Entsperren gedrückt halten"
+      >
+        <IconLock />
+        <span>Gedrückt halten</span>
+      </button>
     </div>
   );
 }
@@ -261,7 +337,7 @@ function SaveSheet({ state, visibility, onClose }: { state: TrackerState; visibi
         onSubmit={async (d) => {
           const id = await saveActivity(d);
           resetTracking();
-          toast('Aktivität gespeichert 🎉');
+          toast('Aktivität gespeichert');
           navigate('aktivitaet', id);
         }}
       />

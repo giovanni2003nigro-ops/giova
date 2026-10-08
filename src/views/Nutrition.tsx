@@ -13,6 +13,7 @@ import { addDays, dateRange } from '../lib/dates';
 import { dailyTotals, sumMacros } from '../lib/nutrition';
 import { fmt } from '../lib/stats';
 import { useDayNeeds, useGoals } from '../needs';
+import { NutrientCheckCard } from './Nutrients';
 import type { Food, MealType } from '../types';
 import { DEFAULT_GOALS, MEAL_LABELS, MEAL_TYPES } from '../types';
 
@@ -61,6 +62,8 @@ export function NutritionView() {
       </Card>
 
       {needs && <DayPlanCard date={date} needs={needs} />}
+
+      <NutrientCheckCard />
 
       <div className="grid-2">
         <button className="btn primary" onClick={() => setSheet({ kind: 'scan' })}>

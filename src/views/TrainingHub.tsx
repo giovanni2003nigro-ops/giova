@@ -5,10 +5,11 @@ import { Card, Stat } from '../components/ui';
 import { db } from '../db';
 import { navigate, useToday } from '../hooks';
 import { addDays, weekStart } from '../lib/dates';
-import { formatDurationSec, SPORT_DEFS } from '../lib/sports';
+import { formatDurationSec } from '../lib/sports';
 import { fmt } from '../lib/stats';
 import { useWeekNeeds } from '../needs';
 import { INTENSITY_LABELS, WEEKDAY_LABELS } from '../types';
+import { SportIcon } from '../components/SportIcon';
 
 /** Training: Woche aus Plan + Erledigtem, Schnellstart und letzte Einheiten. */
 export function TrainingHubView() {
@@ -42,12 +43,12 @@ export function TrainingHubView() {
                 <div className="grow stack tight">
                   {d.done.map((a) => (
                     <a key={a.uid} href={`#/aktivitaet/${a.id}`} className="session done">
-                      {SPORT_DEFS[a.sport].emoji} {a.title} ✓
+                      <SportIcon sport={a.sport} /> {a.title} ✓
                     </a>
                   ))}
                   {d.sessions.map((s) => (
                     <span key={s.id} className={`session ${past ? 'missed' : ''}`}>
-                      {SPORT_DEFS[s.sport].emoji} {s.time ? `${s.time} ` : ''}
+                      <SportIcon sport={s.sport} /> {s.time ? `${s.time} ` : ''}
                       {s.title} · {s.durationMin} min · {INTENSITY_LABELS[s.intensity]}
                     </span>
                   ))}

@@ -8,8 +8,9 @@ import { Card, ErrorBox, Seg, Sheet, toast } from '../components/ui';
 import { getPosts, setBlocked, type PostRow } from '../cloud/posts';
 import { mediaUrl } from '../cloud/api';
 import { MEDAL_BY_KEY } from '../lib/medals';
-import { SPORT_DEFS } from '../lib/sports';
 import { fmt } from '../lib/stats';
+import { SportIcon } from '../components/SportIcon';
+import { IconMedal } from '../components/icons';
 
 /** Profil eines anderen Mitglieds. */
 export function AthleteView({ id }: { id?: string }) {
@@ -102,7 +103,7 @@ export function AthleteView({ id }: { id?: string }) {
           <div className="chips">
             {s.leagues.map((l) => (
               <span key={l.sport} className="row" style={{ gap: 4 }}>
-                <span aria-hidden="true">{SPORT_DEFS[l.sport].emoji}</span>
+                <SportIcon sport={l.sport} />
                 <TierBadge tier={l.tier} />
               </span>
             ))}
@@ -112,7 +113,7 @@ export function AthleteView({ id }: { id?: string }) {
           <div className="chips">
             {s.medals.slice(0, 12).map((m) => (
               <span className="badge" key={`${m.key}${m.period}`}>
-                {MEDAL_BY_KEY.get(m.key)?.emoji} {MEDAL_BY_KEY.get(m.key)?.label ?? m.key}
+                <IconMedal className="inline-icon" /> {MEDAL_BY_KEY.get(m.key)?.label ?? m.key}
               </span>
             ))}
           </div>

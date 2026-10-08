@@ -24,6 +24,7 @@ import { SPORT_DEFS } from '../lib/sports';
 import { fmt } from '../lib/stats';
 import type { Profile, Sport } from '../types';
 import { SPORTS } from '../types';
+import { SportIcon } from '../components/SportIcon';
 
 export function LeaguesView() {
   const t = useToday();
@@ -64,7 +65,7 @@ export function LeaguesView() {
       <div className="chips" role="group" aria-label="Sportart">
         {sportsByUse.map((s) => (
           <button key={s} className="chip" aria-pressed={s === sport} onClick={() => setPicked(s)}>
-            {SPORT_DEFS[s].emoji} {SPORT_DEFS[s].label}
+            <SportIcon sport={s} /> {SPORT_DEFS[s].label}
           </button>
         ))}
       </div>
@@ -117,7 +118,7 @@ export function LeaguesView() {
               {TIERS.map((tier) => (
                 <tr key={tier.key} style={tier.index === perf.tier ? { fontWeight: 650 } : undefined}>
                   <td>
-                    {tier.emoji} {tier.label}
+                    <TierBadge tier={tier.index} />
                   </td>
                   <td>{tier.index === 0 ? 'Start' : `≥ ${formatMetric(rule.volume.metric, rule.volume.thresholds[tier.index - 1])}`}</td>
                   {rule.intensity && (
@@ -233,7 +234,7 @@ function CommunityLeague({ sport, season }: { sport: Sport; season: string }) {
           <IconTrophy className="rec-icon" />
           <div>
             <h3>
-              {last.outcome === 'auf' ? 'Aufgestiegen! 🎉' : last.outcome === 'ab' ? 'Abgestiegen' : 'Klasse gehalten'} – {seasonLabel(last.season)}
+              {last.outcome === 'auf' ? 'Aufgestiegen!' : last.outcome === 'ab' ? 'Abgestiegen' : 'Klasse gehalten'} – {seasonLabel(last.season)}
             </h3>
             <p>
               Platz {last.final_rank} mit {fmt(last.points ?? 0)} Punkten → jetzt {TIERS[last.new_tier ?? last.tier].label}.
@@ -304,7 +305,7 @@ function CommunityLeague({ sport, season }: { sport: Sport; season: string }) {
                 <span className="grow">
                   <span className="name">{r.display_name}</span>
                   <span className="tiny muted">
-                    {r.region_name ?? ''} {r.tier != null ? `· ${TIERS[r.tier].emoji} ${TIERS[r.tier].label}` : ''}
+                    {r.region_name ?? ''} {r.tier != null ? `· ${TIERS[r.tier].label}` : ''}
                   </span>
                 </span>
                 <span className="tnum pts">{fmt(r.points)}</span>

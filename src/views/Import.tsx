@@ -11,6 +11,7 @@ import { activityTitle, formatClock, formatDistance, formatPace, SPORT_DEFS } fr
 import { fmt } from '../lib/stats';
 import type { Sport } from '../types';
 import { SPORTS } from '../types';
+import { SportIcon } from '../components/SportIcon';
 
 interface Row extends ImportedActivity {
   file: string;
@@ -121,7 +122,7 @@ export function ImportView() {
                 >
                   {SPORTS.map((s) => (
                     <option key={s} value={s}>
-                      {SPORT_DEFS[s].emoji} {SPORT_DEFS[s].label}
+                      <SportIcon sport={s} /> {SPORT_DEFS[s].label}
                     </option>
                   ))}
                 </select>

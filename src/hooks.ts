@@ -77,6 +77,7 @@ export type RouteName =
   | 'entwicklung'
   | 'analyse'
   | 'start'
+  | 'naehrstoffe'
   | 'feed'
   | 'aufzeichnen'
   | 'ligen'
@@ -103,6 +104,7 @@ const ROUTES: RouteName[] = [
   'entwicklung',
   'analyse',
   'start',
+  'naehrstoffe',
   'feed',
   'aufzeichnen',
   'ligen',

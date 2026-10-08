@@ -14,6 +14,8 @@ import { MEDAL_BY_KEY } from '../lib/medals';
 import { formatDistance, formatDurationSec, SPORT_DEFS } from '../lib/sports';
 import { fmt } from '../lib/stats';
 import type { Profile, Sport } from '../types';
+import { SportIcon } from '../components/SportIcon';
+import { useCommunity } from '../lib/features';
 
 const LINKS = [
   { href: '#/start', label: 'Einrichtung', sub: 'Ziele, Alltag und Training Schritt für Schritt – mit Erklärung', Icon: IconSparkle },
@@ -22,7 +24,7 @@ const LINKS = [
   { href: '#/schlaf', label: 'Schlaf', sub: 'Dauer, Qualität, Regelmäßigkeit', Icon: IconMoon },
   { href: '#/training', label: 'Krafttraining', sub: 'Sätze eintragen, Verlauf & Analyse', Icon: IconDumbbell },
   { href: '#/medaillen', label: 'Medaillen', sub: 'Erreichte Ziele & Bonuspunkte', Icon: IconMedal },
-  { href: '#/coach', label: 'KI-Coach', sub: 'Fragen zu Training & Ernährung', Icon: IconChat },
+  { href: '#/coach', label: 'Coach', sub: 'Fragen zu Training & Ernährung', Icon: IconChat },
   { href: '#/einstellungen', label: 'Einstellungen', sub: 'API-Schlüssel, Darstellung, Sicherung', Icon: IconGear },
 ];
 
@@ -33,6 +35,7 @@ export function ProfileView() {
   const weights = useLiveQuery(() => db.weights.orderBy('date').toArray(), []);
   const localProfile = useKV<Profile | null>('profile', null);
   const { profile } = useMyProfile();
+  const community = useCommunity();
   const summary = useCloudQuery(profile ? () => getProfileSummary(profile.id) : null, [profile?.id]);
   const [filter, setFilter] = useState<Sport | 'alle'>('alle');
   const [limit, setLimit] = useState(10);
@@ -73,7 +76,7 @@ export function ProfileView() {
               </div>
             )}
           </div>
-          {cloudEnabled && (
+          {cloudEnabled && community && (
             <a className="btn small" href="#/konto">
               {profile ? 'Konto' : 'Anmelden'}
             </a>
@@ -97,14 +100,14 @@ export function ProfileView() {
       </Card>
 
       {bySport.length > 0 && (
-        <Card title="Dieser Monat" action={<a className="small" href="#/ligen">Ligen</a>}>
+        <Card title="Dieser Monat" action={community ? <a className="small" href="#/ligen">Ligen</a> : undefined}>
           <div className="list">
             {bySport.map(([s, r]) => {
               const perf = sportPerformance(s, activities, t, { sex: localProfile?.sex ?? 'm', bodyweight: bw });
               return (
                 <div className="list-item" key={s}>
                   <span className="sport-dot" aria-hidden="true">
-                    {SPORT_DEFS[s].emoji}
+                    <SportIcon sport={s} />
                   </span>
                   <div className="main">
                     <div className="title">{SPORT_DEFS[s].label}</div>
@@ -126,7 +129,7 @@ export function ProfileView() {
           <div className="chips">
             {medals.slice(0, 12).map((m) => (
               <span className="badge" key={m.id} title={MEDAL_BY_KEY.get(m.key)?.description}>
-                {MEDAL_BY_KEY.get(m.key)?.emoji} {MEDAL_BY_KEY.get(m.key)?.label}
+                <IconMedal className="inline-icon" /> {MEDAL_BY_KEY.get(m.key)?.label}
               </span>
             ))}
           </div>
@@ -156,7 +159,7 @@ export function ProfileView() {
           </button>
           {usedSports.map((s) => (
             <button key={s} className="chip" aria-pressed={filter === s} onClick={() => setFilter(s)}>
-              {SPORT_DEFS[s].emoji} {SPORT_DEFS[s].label}
+              <SportIcon sport={s} /> {SPORT_DEFS[s].label}
             </button>
           ))}
         </div>

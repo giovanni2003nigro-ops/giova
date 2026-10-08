@@ -12,6 +12,7 @@ import { fmt, fmtSigned } from '../lib/stats';
 import { activityFactor, starterPlan, type TimeOfDay } from '../lib/starterPlan';
 import type { DayKind, GoalType, Goals, Profile, Sport, TrainingPlan, WeekSchedule } from '../types';
 import { DAY_KIND_LABELS, DEFAULT_GOALS, GOAL_LABELS, INTENSITY_LABELS, SPORTS, WEEKDAY_SHORT } from '../types';
+import { SPORT_PATHS, SportIcon } from '../components/SportIcon';
 
 type Num = number | '';
 type PlanMode = 'start' | 'behalten' | 'ohne';
@@ -39,7 +40,29 @@ interface Draft {
 const STEPS = ['willkommen', 'koerper', 'ziel', 'sport', 'alltag', 'plan', 'zusammenhang', 'fertig'] as const;
 type Step = (typeof STEPS)[number];
 
-const GOAL_EMOJI: Record<GoalType, string> = { defizit: '🔥', erhalt: '⚖️', aufbau: '💪', kraft: '🏋️', recomp: '🔄' };
+/** Linien-Icons (24er-Raster) für Ziele und das Schaubild – keine Emojis. */
+const ICON: Record<string, string[]> = {
+  defizit: ['M3 7l6 6 4-4 8 8', 'M15 17h6v-6'],
+  erhalt: ['M4 9h16', 'M4 15h16'],
+  aufbau: ['M3 17l6-6 4 4 8-8', 'M15 7h6v6'],
+  kraft: ['M2 12h20', 'M5 8.5v7', 'M8 6.5v11', 'M16 6.5v11', 'M19 8.5v7'],
+  recomp: ['M4 12a8 8 0 0 1 13.7-5.6L20 9', 'M20 4v5h-5', 'M20 12a8 8 0 0 1-13.7 5.6L4 15', 'M4 20v-5h5'],
+  ziel: ['M12 3a9 9 0 1 0 0 18 9 9 0 1 0 0-18', 'M12 7.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 1 0 0-9', 'M12 11a1 1 0 1 0 0 2 1 1 0 1 0 0-2'],
+  training: SPORT_PATHS.laufen,
+  alltag: ['M4 21V6l8-3 8 3v15', 'M9 21v-4h6v4', 'M8.5 8.5h1.5', 'M14 8.5h1.5', 'M8.5 12.5h1.5', 'M14 12.5h1.5'],
+  koerper: ['M12 4v16', 'M7 20h10', 'M5 8h14', 'M5 8l-2.5 6a2.5 2.5 0 0 0 5 0Z', 'M19 8l-2.5 6a2.5 2.5 0 0 0 5 0Z'],
+  essen: ['M7 3v8', 'M4.5 3v5a2.5 2.5 0 0 0 5 0V3', 'M7 11v10', 'M16 3c-1.7 1-2.5 3-2.5 6s1 4 2.5 4.5V21'],
+};
+
+function LineIcon({ name, size = 24 }: { name: string; size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {ICON[name].map((d) => (
+        <path key={d} d={d} />
+      ))}
+    </svg>
+  );
+}
 
 /**
  * Geführte Einrichtung: führt Schritt für Schritt durch Körper, Ziel, Sport, Alltag und Plan
@@ -168,8 +191,8 @@ export function OnboardingView() {
                   set({ type: g, rate: clampRate(Math.round(w * GOAL_CONFIG[g].rateFraction * 20) / 20, model.lim) });
                 }}
               >
-                <span className="goal-emoji" aria-hidden="true">
-                  {GOAL_EMOJI[g]}
+                <span className="goal-icon">
+                  <LineIcon name={g} />
                 </span>
                 <strong>{GOAL_LABELS[g]}</strong>
                 <span className="tiny muted">{GOAL_CONFIG[g].description}</span>
@@ -207,7 +230,7 @@ export function OnboardingView() {
                 aria-pressed={draft.sports.includes(s)}
                 onClick={() => set({ sports: draft.sports.includes(s) ? draft.sports.filter((x) => x !== s) : [...draft.sports, s] })}
               >
-                {SPORT_DEFS[s].emoji} {SPORT_DEFS[s].label}
+                <SportIcon sport={s} /> {SPORT_DEFS[s].label}
               </button>
             ))}
           </div>
@@ -284,7 +307,7 @@ export function OnboardingView() {
                   <div key={s.id} className="ob-plan-row" style={{ animationDelay: `${i * 90}ms` }}>
                     <span className="wd-label">{WEEKDAY_SHORT[s.weekday]}</span>
                     <span className="grow">
-                      {SPORT_DEFS[s.sport].emoji} {s.title}
+                      <SportIcon sport={s.sport} /> {s.title}
                     </span>
                     <span className="tiny muted">
                       {s.durationMin} min · {INTENSITY_LABELS[s.intensity]}
@@ -319,7 +342,7 @@ export function OnboardingView() {
                 setTimeout(() => openCoach('Geh mit mir meine Ziele, meinen Alltag und meinen Trainingsplan durch und schlag mir Verbesserungen vor.'), 60);
               }}
             >
-              Mit dem KI-Coach feinjustieren
+              Mit dem Coach feinjustieren
             </button>
           </div>
         </Panel>
@@ -410,7 +433,8 @@ function Panel({ title, why, children }: { title?: string; why?: string; childre
       {title && <h1 className="ob-title">{title}</h1>}
       {why && (
         <p className="ob-why">
-          <span aria-hidden="true">💡</span> {why}
+          <strong>Warum? </strong>
+          {why}
         </p>
       )}
       {children}
@@ -457,10 +481,10 @@ function CountUp({ value, suffix = '', delay = 0 }: { value: number; suffix?: st
 /** Animiertes Schaubild: Ziel, Training, Alltag und Körper fließen in den Tagesbedarf. */
 function FlowDiagram() {
   const nodes = [
-    { x: 60, y: 46, emoji: '🎯', label: 'Ziel' },
-    { x: 260, y: 46, emoji: '🏃', label: 'Training' },
-    { x: 60, y: 186, emoji: '🏢', label: 'Alltag' },
-    { x: 260, y: 186, emoji: '⚖️', label: 'Körper' },
+    { x: 60, y: 46, icon: 'ziel', label: 'Ziel' },
+    { x: 260, y: 46, icon: 'training', label: 'Training' },
+    { x: 60, y: 186, icon: 'alltag', label: 'Alltag' },
+    { x: 260, y: 186, icon: 'koerper', label: 'Körper' },
   ];
   return (
     <svg className="flow" viewBox="0 0 320 300" role="img" aria-label="Ziel, Training, Alltag und Körper ergeben zusammen den Tagesbedarf, daraus entstehen Essen und Rezepte">
@@ -471,9 +495,11 @@ function FlowDiagram() {
       {nodes.map((n, i) => (
         <g key={n.label} className="flow-node" style={{ animationDelay: `${i * 150}ms` }}>
           <circle cx={n.x} cy={n.y} r={30} />
-          <text x={n.x} y={n.y + 7} textAnchor="middle" className="flow-emoji">
-            {n.emoji}
-          </text>
+          <g className="flow-icon" transform={`translate(${n.x - 14} ${n.y - 14}) scale(${28 / 24})`}>
+            {ICON[n.icon].map((d) => (
+              <path key={d} d={d} />
+            ))}
+          </g>
           <text x={n.x} y={n.y + 48} textAnchor="middle" className="flow-label">
             {n.label}
           </text>
@@ -481,9 +507,11 @@ function FlowDiagram() {
       ))}
       <g className="flow-node flow-center" style={{ animationDelay: '700ms' }}>
         <circle cx={160} cy={116} r={50} />
-        <text x={160} y={112} textAnchor="middle" className="flow-emoji">
-          🍽️
-        </text>
+        <g className="flow-icon accent" transform="translate(146 88) scale(1.1667)">
+          {ICON.essen.map((d) => (
+            <path key={d} d={d} />
+          ))}
+        </g>
         <text x={160} y={136} textAnchor="middle" className="flow-label strong small-label">
           Tagesbedarf
         </text>
@@ -557,7 +585,8 @@ function Explain({ model, draft }: { model: Model; draft: Draft }) {
             <span className="ob-day-bar" style={{ height: `${(d.targets.kcal / wmax) * 100}%`, animationDelay: `${2300 + i * 80}ms` }} />
             <span className="tiny">{WEEKDAY_SHORT[d.weekday]}</span>
             <span className="tiny" aria-hidden="true">
-              {d.sessions.map((s) => SPORT_DEFS[s.sport].emoji).join('') || '·'}
+              {d.sessions.map((s) => <SportIcon key={s.id} sport={s.sport} size={13} />)}
+              {!d.sessions.length && '·'}
             </span>
           </div>
         ))}
@@ -565,19 +594,19 @@ function Explain({ model, draft }: { model: Model; draft: Draft }) {
 
       <ul className="ob-facts">
         <li style={{ animationDelay: '2900ms' }}>
-          🏃 <strong>Mehr Training → mehr Energie:</strong> An Trainingstagen gibt es mehr, vor allem Kohlenhydrate. Ruhetage bekommen weniger.
+          <strong>Mehr Training → mehr Energie:</strong> An Trainingstagen gibt es mehr, vor allem Kohlenhydrate. Ruhetage bekommen weniger.
         </li>
         <li style={{ animationDelay: '3100ms' }}>
-          🎯 <strong>Ziel {fmtSigned(model.goals.weeklyRate, 2)} kg/Woche</strong> = {fmtSigned(Math.round(model.goals.weeklyRate * KCAL_PER_KG_WEEK_PER_DAY))} kcal jeden Tag.
+          <strong>Ziel {fmtSigned(model.goals.weeklyRate, 2)} kg/Woche</strong> = {fmtSigned(Math.round(model.goals.weeklyRate * KCAL_PER_KG_WEEK_PER_DAY))} kcal jeden Tag.
         </li>
         <li style={{ animationDelay: '3300ms' }}>
-          🥩 <strong>Protein {fmt(model.goals.protein)} g und Fett {fmt(model.goals.fat)} g</strong> bleiben jeden Tag gleich – die Kohlenhydrate gleichen aus.
+          <strong>Protein {fmt(model.goals.protein)} g und Fett {fmt(model.goals.fat)} g</strong> bleiben jeden Tag gleich – die Kohlenhydrate gleichen aus.
         </li>
         <li style={{ animationDelay: '3500ms' }}>
-          🛡️ <strong>Rahmen:</strong> nie unter {fmt(model.lim.minKcal)} kcal, mind. 1 Ruhetag, höchstens 3 harte Einheiten – darauf achten App und Coach immer.
+          <strong>Rahmen:</strong> nie unter {fmt(model.lim.minKcal)} kcal, mind. 1 Ruhetag, höchstens 3 harte Einheiten – darauf achten App und Coach immer.
         </li>
         <li style={{ animationDelay: '3700ms' }}>
-          📈 <strong>Wird genauer:</strong> Mit 3 Wochen Essen & Gewicht gleiche ich die Rechnung mit deinem echten Verbrauch ab.
+          <strong>Wird genauer:</strong> Mit 3 Wochen Essen & Gewicht gleiche ich die Rechnung mit deinem echten Verbrauch ab.
         </li>
       </ul>
     </section>

@@ -42,7 +42,7 @@ export function AnalysisView() {
       </Card>
 
       <Card title="Abweichungen & Vorschläge">
-        {problems.length === 0 && <p className="small text-2">Keine Abweichungen – alles im Plan. 💪</p>}
+        {problems.length === 0 && <p className="small text-2">Keine Abweichungen – alles im Plan.</p>}
         {problems.map((r) => (
           <Finding key={r.id} rec={r} />
         ))}

@@ -5,6 +5,7 @@ import { publishActivity, syncMedals, unpublishActivity } from './cloud/api';
 import { toast } from './components/ui';
 import { db, getKV, useKV } from './db';
 import { loadGoals } from './needs';
+import { communityEnabled } from './lib/features';
 import { today as getToday, toISODate } from './lib/dates';
 import { evaluateMedals, liftOf, MEDAL_BY_KEY } from './lib/medals';
 import { activityPoints } from './lib/points';
@@ -46,7 +47,7 @@ export async function saveActivity(input: NewActivity): Promise<number> {
   };
   const id = (await db.activities.add(activity)) as number;
   // Auch „Nur ich“ wird hochgeladen (für andere unsichtbar), damit die Punkte in der Liga zählen
-  if (supabase && currentUserId() && (await autoShareEnabled())) {
+  if (communityEnabled() && supabase && currentUserId() && (await autoShareEnabled())) {
     publishActivity({ ...activity, id }).catch((err) => toast(`Nicht geteilt: ${cloudError(err)}`));
   }
   return id;
@@ -59,7 +60,7 @@ export async function updateActivity(id: number, patch: Partial<Activity>): Prom
   const next: Activity = { ...cur, ...patch, updatedAt: Date.now() };
   next.points = activityPoints(next);
   await db.activities.put(next);
-  if (next.remoteId && supabase && currentUserId()) {
+  if (communityEnabled() && next.remoteId && supabase && currentUserId()) {
     try {
       await publishActivity(next);
     } catch (err) {
@@ -165,10 +166,10 @@ export function useMedalWatcher() {
         await db.medals.bulkPut(fresh);
         if (!alive) return;
         // Beim allerersten Durchlauf mit Altdaten keine Flut an Meldungen
-        if (fresh.length > 2) toast(`🏅 ${fresh.length} Medaillen freigeschaltet – +${fresh.reduce((s, m) => s + m.points, 0)} Punkte`);
-        else for (const m of fresh) toast(`🏅 Medaille: ${MEDAL_BY_KEY.get(m.key)?.label} (+${m.points} Punkte)`);
+        if (fresh.length > 2) toast(`${fresh.length} Medaillen freigeschaltet – +${fresh.reduce((s, m) => s + m.points, 0)} Punkte`);
+        else for (const m of fresh) toast(`Medaille: ${MEDAL_BY_KEY.get(m.key)?.label} (+${m.points} Punkte)`);
       }
-      if (loggedIn) await syncMedals().catch(() => undefined);
+      if (loggedIn && communityEnabled()) await syncMedals().catch(() => undefined);
     })();
     return () => {
       alive = false;

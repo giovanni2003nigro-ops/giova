@@ -16,6 +16,7 @@ import {
   describePlanAndDay,
   describeGoals,
   describeNutrition,
+  describeNutrients,
   describeSleep,
   describeToday,
   describeTraining,
@@ -44,7 +45,7 @@ const Macros100 = z.object({
   fett: z.number().min(0),
 });
 
-const BEREICHE = ['heute', 'ernaehrung_14_tage', 'training', 'aktivitaeten', 'plan_und_bedarf', 'schlaf', 'gewicht', 'ziele', 'rahmenbedingungen', 'auswertung', 'alles'] as const;
+const BEREICHE = ['heute', 'ernaehrung_14_tage', 'naehrstoffe', 'training', 'aktivitaeten', 'plan_und_bedarf', 'schlaf', 'gewicht', 'ziele', 'rahmenbedingungen', 'auswertung', 'alles'] as const;
 
 export const CHAT_TOOLS: BetaTool[] = [
   {
@@ -136,7 +137,7 @@ export const CHAT_TOOLS: BetaTool[] = [
   {
     name: 'daten_abrufen',
     description:
-      'Liefert den AKTUELLEN Datenstand der App (der Datenstand im Systemprompt stammt vom Gesprächsbeginn). Bereiche: heute (Essen/Training/Schlaf heute + offene Makros), ernaehrung_14_tage, training (Kraftsätze der letzten 3 Wochen oder Verlauf einer Übung mit "uebung"), aktivitaeten (Läufe, Radfahrten, Schwimmen, Hyrox … der letzten 4 Wochen), plan_und_bedarf (Trainingsplan mit IDs, Alltag, Tagesbedarf & Mahlzeiten-Timing heute), schlaf, gewicht, ziele, rahmenbedingungen (Pflicht-Regeln und ob sie eingehalten sind), auswertung (automatischer Zielabgleich & Trends), alles.',
+      'Liefert den AKTUELLEN Datenstand der App (der Datenstand im Systemprompt stammt vom Gesprächsbeginn). Bereiche: heute (Essen/Training/Schlaf heute + offene Makros), ernaehrung_14_tage, naehrstoffe (was in den letzten 7 Tagen gefehlt hat), training (Kraftsätze der letzten 3 Wochen oder Verlauf einer Übung mit "uebung"), aktivitaeten (Läufe, Radfahrten, Schwimmen, Hyrox … der letzten 4 Wochen), plan_und_bedarf (Trainingsplan mit IDs, Alltag, Tagesbedarf & Mahlzeiten-Timing heute), schlaf, gewicht, ziele, rahmenbedingungen (Pflicht-Regeln und ob sie eingehalten sind), auswertung (automatischer Zielabgleich & Trends), alles.',
     input_schema: {
       type: 'object',
       properties: {
@@ -153,11 +154,11 @@ export const CHAT_TOOLS: BetaTool[] = [
 
 export const TOOL_LABELS: Record<string, string> = {
   ...ACTION_LABELS,
-  lebensmittel_suchen: '🔎 Bibliothek durchsucht',
-  naehrwerte_berechnen: '🧮 Nährwerte berechnet',
-  mahlzeit_eintragen: '📝 Ins Tagebuch eingetragen',
-  lebensmittel_speichern: '💾 Lebensmittel gespeichert',
-  daten_abrufen: '📊 Aktuelle Daten abgerufen',
+  lebensmittel_suchen: 'Bibliothek durchsucht',
+  naehrwerte_berechnen: 'Nährwerte berechnet',
+  mahlzeit_eintragen: 'Ins Tagebuch eingetragen',
+  lebensmittel_speichern: 'Lebensmittel gespeichert',
+  daten_abrufen: 'Aktuelle Daten abgerufen',
 };
 
 const inputs = {
@@ -334,6 +335,8 @@ async function execute(name: string, raw: unknown): Promise<string> {
           return describeToday(data, today);
         case 'ernaehrung_14_tage':
           return describeNutrition(data, today);
+        case 'naehrstoffe':
+          return describeNutrients(data, today);
         case 'training':
           return describeTraining(data, today, uebung);
         case 'aktivitaeten':

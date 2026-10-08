@@ -90,8 +90,24 @@ async function lockScreen() {
 }
 
 document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || state.status === 'idle') return;
   // Wake Lock geht beim Wechsel in den Hintergrund verloren → neu anfordern
-  if (document.visibilityState === 'visible' && state.status !== 'idle') void lockScreen();
+  void lockScreen();
+  // Der Browser kann GPS im Hintergrund anhalten: Beobachtung neu starten und sofort einen Punkt holen,
+  // damit die Lücke schnell (als Luftlinie) geschlossen wird
+  if (state.status === 'running' && SPORT_DEFS[state.sport].gps && 'geolocation' in navigator) {
+    stopGps();
+    startGps();
+    navigator.geolocation.getCurrentPosition(
+      (pos) =>
+        dispatch({
+          type: 'fix',
+          fix: { lat: pos.coords.latitude, lon: pos.coords.longitude, t: pos.timestamp || Date.now(), accuracy: pos.coords.accuracy, ele: pos.coords.altitude },
+        }),
+      () => undefined,
+      { enableHighAccuracy: true, maximumAge: 5_000, timeout: 15_000 },
+    );
+  }
 });
 
 async function voice(): Promise<boolean> {

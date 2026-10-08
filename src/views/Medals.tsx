@@ -10,6 +10,7 @@ import { CATEGORY_LABELS, medalProgress, type MedalCategory } from '../lib/medal
 import { SPORT_DEFS } from '../lib/sports';
 import { fmt } from '../lib/stats';
 import type { TrainingPlan } from '../types';
+import { IconMedal } from '../components/icons';
 
 export function MedalsView() {
   const t = useToday();
@@ -53,7 +54,7 @@ export function MedalsView() {
             <span className="value">+{fmt(seasonPts)}</span>
           </div>
         </div>
-        <p className="tiny muted">Monats-Medaillen (🔁) kannst du jede Saison neu verdienen. Die Punkte zählen in deinen Ligen.</p>
+        <p className="tiny muted">Monats-Medaillen kannst du jede Saison neu verdienen. Die Punkte zählen in deinen Ligen.</p>
       </Card>
 
       {[...byCat.entries()].map(([cat, list]) => (
@@ -67,11 +68,11 @@ export function MedalsView() {
               return (
                 <div key={def.key} className={`medal ${got ? 'got' : ''}`}>
                   <span className="medal-emoji" aria-hidden="true">
-                    {def.emoji}
+                    <IconMedal />
                   </span>
                   <div className="grow">
                     <div className="title">
-                      {def.label} {def.repeat === 'season' && <span title="jede Saison neu">🔁</span>}
+                      {def.label} {def.repeat === 'season' && <span className="badge">monatlich</span>}
                     </div>
                     <div className="tiny muted">
                       {def.description}

@@ -57,7 +57,6 @@ export interface MedalDef {
   key: string;
   label: string;
   description: string;
-  emoji: string;
   points: number;
   category: MedalCategory;
   sport?: Sport;
@@ -176,55 +175,55 @@ const countU = (v: number) => fmt(v);
 
 export const MEDALS: MedalDef[] = [
   // Ausdauer – einmalig
-  { key: 'erste_aktivitaet', label: 'Los geht’s', description: 'Deine erste Aktivität aufgezeichnet', emoji: '🚀', points: 25, category: 'konstanz', repeat: 'once',
+  { key: 'erste_aktivitaet', label: 'Los geht’s', description: 'Deine erste Aktivität aufgezeichnet', points: 25, category: 'konstanz', repeat: 'once',
     check: (ctx) => {
       const first = [...ctx.activities].sort((a, b) => a.startTime - b.startTime)[0];
       return { date: first?.date ?? null, progress: first ? 1 : 0, text: first ? '1 / 1' : '0 / 1' };
     } },
-  { key: 'lauf_5k', label: 'Erste 5 km', description: 'Einen Lauf über mindestens 5 km', emoji: '👟', points: 50, category: 'ausdauer', sport: 'laufen', repeat: 'once', check: single('laufen', 5, km, kmU) },
-  { key: 'lauf_10k', label: '10-km-Läufer', description: 'Einen Lauf über mindestens 10 km', emoji: '🏃', points: 100, category: 'ausdauer', sport: 'laufen', repeat: 'once', check: single('laufen', 10, km, kmU) },
-  { key: 'lauf_hm', label: 'Halbmarathon', description: '21,1 km am Stück gelaufen', emoji: '🎽', points: 250, category: 'ausdauer', sport: 'laufen', repeat: 'once', check: single('laufen', 21.0975, km, kmU) },
-  { key: 'lauf_marathon', label: 'Marathon', description: '42,2 km am Stück gelaufen', emoji: '🏅', points: 500, category: 'ausdauer', sport: 'laufen', repeat: 'once', check: single('laufen', 42.195, km, kmU) },
-  { key: 'lauf_sub25_5k', label: '5 km unter 25 min', description: 'Mindestens 5 km mit einer Ø Pace von 5:00 /km oder schneller', emoji: '⚡', points: 150, category: 'ausdauer', sport: 'laufen', repeat: 'once',
+  { key: 'lauf_5k', label: 'Erste 5 km', description: 'Einen Lauf über mindestens 5 km', points: 50, category: 'ausdauer', sport: 'laufen', repeat: 'once', check: single('laufen', 5, km, kmU) },
+  { key: 'lauf_10k', label: '10-km-Läufer', description: 'Einen Lauf über mindestens 10 km', points: 100, category: 'ausdauer', sport: 'laufen', repeat: 'once', check: single('laufen', 10, km, kmU) },
+  { key: 'lauf_hm', label: 'Halbmarathon', description: '21,1 km am Stück gelaufen', points: 250, category: 'ausdauer', sport: 'laufen', repeat: 'once', check: single('laufen', 21.0975, km, kmU) },
+  { key: 'lauf_marathon', label: 'Marathon', description: '42,2 km am Stück gelaufen', points: 500, category: 'ausdauer', sport: 'laufen', repeat: 'once', check: single('laufen', 42.195, km, kmU) },
+  { key: 'lauf_sub25_5k', label: '5 km unter 25 min', description: 'Mindestens 5 km mit einer Ø Pace von 5:00 /km oder schneller', points: 150, category: 'ausdauer', sport: 'laufen', repeat: 'once',
     check: single('laufen', 5, km, kmU, (a) => km(a) > 0 && a.durationSec / km(a) <= 300) },
-  { key: 'lauf_sub50_10k', label: '10 km unter 50 min', description: 'Mindestens 10 km mit einer Ø Pace von 5:00 /km oder schneller', emoji: '🔥', points: 200, category: 'ausdauer', sport: 'laufen', repeat: 'once',
+  { key: 'lauf_sub50_10k', label: '10 km unter 50 min', description: 'Mindestens 10 km mit einer Ø Pace von 5:00 /km oder schneller', points: 200, category: 'ausdauer', sport: 'laufen', repeat: 'once',
     check: single('laufen', 10, km, kmU, (a) => km(a) > 0 && a.durationSec / km(a) <= 300) },
-  { key: 'rad_100k', label: 'Erste 100 km', description: '100 km am Stück geradelt', emoji: '🚴', points: 200, category: 'ausdauer', sport: 'radfahren', repeat: 'once', check: single('radfahren', 100, km, kmU) },
-  { key: 'schwimm_1500', label: '1.500 m am Stück', description: 'Olympische Triathlon-Distanz geschwommen', emoji: '🏊', points: 100, category: 'ausdauer', sport: 'schwimmen', repeat: 'once', check: single('schwimmen', 1.5, km, mU) },
-  { key: 'wandern_1000hm', label: '1.000 Höhenmeter', description: 'Eine Wanderung mit mindestens 1.000 Höhenmetern', emoji: '⛰️', points: 100, category: 'ausdauer', sport: 'wandern', repeat: 'once',
+  { key: 'rad_100k', label: 'Erste 100 km', description: '100 km am Stück geradelt', points: 200, category: 'ausdauer', sport: 'radfahren', repeat: 'once', check: single('radfahren', 100, km, kmU) },
+  { key: 'schwimm_1500', label: '1.500 m am Stück', description: 'Olympische Triathlon-Distanz geschwommen', points: 100, category: 'ausdauer', sport: 'schwimmen', repeat: 'once', check: single('schwimmen', 1.5, km, mU) },
+  { key: 'wandern_1000hm', label: '1.000 Höhenmeter', description: 'Eine Wanderung mit mindestens 1.000 Höhenmetern', points: 100, category: 'ausdauer', sport: 'wandern', repeat: 'once',
     check: single('wandern', 1000, (a) => a.elevationGainM ?? 0, (v) => `${fmt(v)} Hm`) },
-  { key: 'rudern_10k', label: '10 km Rudern', description: '10 km am Stück gerudert', emoji: '🚣', points: 100, category: 'ausdauer', sport: 'rudern', repeat: 'once', check: single('rudern', 10, km, kmU) },
+  { key: 'rudern_10k', label: '10 km Rudern', description: '10 km am Stück gerudert', points: 100, category: 'ausdauer', sport: 'rudern', repeat: 'once', check: single('rudern', 10, km, kmU) },
 
   // Ausdauer – jede Saison
-  { key: 'lauf_50km_monat', label: '50 km im Monat', description: '50 km Laufen in einem Monat', emoji: '📆', points: 75, category: 'ausdauer', sport: 'laufen', repeat: 'season', check: cumulative('laufen', 50, km, kmU) },
-  { key: 'lauf_100km_monat', label: '100 km im Monat', description: '100 km Laufen in einem Monat', emoji: '💯', points: 150, category: 'ausdauer', sport: 'laufen', repeat: 'season', check: cumulative('laufen', 100, km, kmU) },
-  { key: 'rad_500km_monat', label: '500 km im Monat', description: '500 km Radfahren in einem Monat', emoji: '🛣️', points: 150, category: 'ausdauer', sport: 'radfahren', repeat: 'season', check: cumulative('radfahren', 500, km, kmU) },
-  { key: 'schwimm_10km_monat', label: '10 km im Monat', description: '10 km Schwimmen in einem Monat', emoji: '🌊', points: 150, category: 'ausdauer', sport: 'schwimmen', repeat: 'season', check: cumulative('schwimmen', 10, km, kmU) },
+  { key: 'lauf_50km_monat', label: '50 km im Monat', description: '50 km Laufen in einem Monat', points: 75, category: 'ausdauer', sport: 'laufen', repeat: 'season', check: cumulative('laufen', 50, km, kmU) },
+  { key: 'lauf_100km_monat', label: '100 km im Monat', description: '100 km Laufen in einem Monat', points: 150, category: 'ausdauer', sport: 'laufen', repeat: 'season', check: cumulative('laufen', 100, km, kmU) },
+  { key: 'rad_500km_monat', label: '500 km im Monat', description: '500 km Radfahren in einem Monat', points: 150, category: 'ausdauer', sport: 'radfahren', repeat: 'season', check: cumulative('radfahren', 500, km, kmU) },
+  { key: 'schwimm_10km_monat', label: '10 km im Monat', description: '10 km Schwimmen in einem Monat', points: 150, category: 'ausdauer', sport: 'schwimmen', repeat: 'season', check: cumulative('schwimmen', 10, km, kmU) },
 
   // Hyrox
-  { key: 'hyrox_finisher', label: 'Hyrox-Finisher', description: 'Einen Hyrox-Wettkampf oder eine komplette Simulation beendet', emoji: '🔥', points: 300, category: 'hyrox', sport: 'hyrox', repeat: 'once',
+  { key: 'hyrox_finisher', label: 'Hyrox-Finisher', description: 'Einen Hyrox-Wettkampf oder eine komplette Simulation beendet', points: 300, category: 'hyrox', sport: 'hyrox', repeat: 'once',
     check: (ctx, range) => {
       const hit = counted(ctx, 'hyrox', range).find((a) => a.hyrox?.race);
       return { date: hit?.date ?? null, progress: hit ? 1 : 0, text: hit ? 'geschafft' : 'Wettkampf eintragen' };
     } },
-  { key: 'hyrox_sub90', label: 'Hyrox unter 1:30 h', description: 'Hyrox-Wettkampf in weniger als 90 Minuten', emoji: '⏱️', points: 400, category: 'hyrox', sport: 'hyrox', repeat: 'once',
+  { key: 'hyrox_sub90', label: 'Hyrox unter 1:30 h', description: 'Hyrox-Wettkampf in weniger als 90 Minuten', points: 400, category: 'hyrox', sport: 'hyrox', repeat: 'once',
     check: (ctx, range) => {
       const races = counted(ctx, 'hyrox', range).filter((a) => a.hyrox?.race);
       const hit = races.find((a) => a.durationSec < 5400);
       const best = races.length ? Math.min(...races.map((a) => a.durationSec)) : null;
       return { date: hit?.date ?? null, progress: best ? Math.min(1, 5400 / best) : 0, text: best ? `Bestzeit ${Math.floor(best / 3600)}:${String(Math.floor((best % 3600) / 60)).padStart(2, '0')} h` : 'noch kein Wettkampf' };
     } },
-  { key: 'hyrox_8_monat', label: '8 Hyrox-Einheiten', description: '8 Hyrox-Einheiten in einem Monat', emoji: '💥', points: 100, category: 'hyrox', sport: 'hyrox', repeat: 'season', check: cumulative('hyrox', 8, () => 1, countU) },
+  { key: 'hyrox_8_monat', label: '8 Hyrox-Einheiten', description: '8 Hyrox-Einheiten in einem Monat', points: 100, category: 'hyrox', sport: 'hyrox', repeat: 'season', check: cumulative('hyrox', 8, () => 1, countU) },
 
   // Kraft
-  { key: 'kraft_12_monat', label: '12 Krafteinheiten', description: 'An 12 Tagen in einem Monat Krafttraining', emoji: '🏋️', points: 100, category: 'kraft', sport: 'gym', repeat: 'season',
+  { key: 'kraft_12_monat', label: '12 Krafteinheiten', description: 'An 12 Tagen in einem Monat Krafttraining', points: 100, category: 'kraft', sport: 'gym', repeat: 'season',
     check: (ctx, range) => {
       const days = [...new Set([...ctx.sets.map((s) => s.date), ...ctx.activities.filter((a) => a.sport === 'gym' || a.sport === 'powerlifting').map((a) => a.date)])]
         .filter((d) => d >= range.from && d <= range.to)
         .sort();
       return { date: days[11] ?? null, progress: Math.min(1, days.length / 12), text: `${days.length} / 12 Tage` };
     } },
-  { key: 'kraft_pr', label: 'Neuer Rekord', description: 'Ein neuer Bestwert (geschätztes 1RM) in einer Übung', emoji: '🏆', points: 50, category: 'kraft', sport: 'gym', repeat: 'season',
+  { key: 'kraft_pr', label: 'Neuer Rekord', description: 'Ein neuer Bestwert (geschätztes 1RM) in einer Übung', points: 50, category: 'kraft', sport: 'gym', repeat: 'season',
     check: (ctx, range) => {
       const best = new Map<string, number>();
       for (const s of [...ctx.sets].sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt)) {
@@ -236,9 +235,9 @@ export const MEDALS: MedalDef[] = [
       }
       return { ...NOT, text: 'noch kein Rekord diesen Monat' };
     } },
-  { key: 'pl_bw_bench', label: 'Körpergewicht Bankdrücken', description: 'Bankdrücken (geschätztes 1RM) mit deinem Körpergewicht', emoji: '💪', points: 150, category: 'kraft', sport: 'powerlifting', repeat: 'once', check: liftRatio('bench', 1) },
-  { key: 'pl_2x_deadlift', label: '2 × Körpergewicht Kreuzheben', description: 'Kreuzheben (geschätztes 1RM) mit dem doppelten Körpergewicht', emoji: '🦍', points: 250, category: 'kraft', sport: 'powerlifting', repeat: 'once', check: liftRatio('deadlift', 2) },
-  { key: 'pl_total_500', label: '500 kg Total', description: 'Kniebeuge + Bankdrücken + Kreuzheben zusammen mindestens 500 kg (geschätztes 1RM)', emoji: '🥇', points: 300, category: 'kraft', sport: 'powerlifting', repeat: 'once',
+  { key: 'pl_bw_bench', label: 'Körpergewicht Bankdrücken', description: 'Bankdrücken (geschätztes 1RM) mit deinem Körpergewicht', points: 150, category: 'kraft', sport: 'powerlifting', repeat: 'once', check: liftRatio('bench', 1) },
+  { key: 'pl_2x_deadlift', label: '2 × Körpergewicht Kreuzheben', description: 'Kreuzheben (geschätztes 1RM) mit dem doppelten Körpergewicht', points: 250, category: 'kraft', sport: 'powerlifting', repeat: 'once', check: liftRatio('deadlift', 2) },
+  { key: 'pl_total_500', label: '500 kg Total', description: 'Kniebeuge + Bankdrücken + Kreuzheben zusammen mindestens 500 kg (geschätztes 1RM)', points: 300, category: 'kraft', sport: 'powerlifting', repeat: 'once',
     check: (ctx, range) => {
       const days = [...new Set(ctx.sets.filter((s) => liftOf(s.exercise) && s.date >= range.from && s.date <= range.to).map((s) => s.date))].sort();
       let total = 0;
@@ -251,18 +250,18 @@ export const MEDALS: MedalDef[] = [
     } },
 
   // Dranbleiben
-  { key: 'streak_7', label: '7 Tage am Stück', description: 'An 7 Tagen in Folge trainiert', emoji: '🔗', points: 75, category: 'konstanz', repeat: 'season',
+  { key: 'streak_7', label: '7 Tage am Stück', description: 'An 7 Tagen in Folge trainiert', points: 75, category: 'konstanz', repeat: 'season',
     check: (ctx, range) => {
       const active = activeDays(ctx);
       const s = streak(rangeDays(range, ctx.today), (d) => active.has(d), 7);
       return { date: s.date, progress: s.best / 7, text: `${s.best} / 7 Tage` };
     } },
-  { key: 'aktiv_20_monat', label: '20 aktive Tage', description: 'An 20 Tagen in einem Monat trainiert', emoji: '📈', points: 150, category: 'konstanz', repeat: 'season',
+  { key: 'aktiv_20_monat', label: '20 aktive Tage', description: 'An 20 Tagen in einem Monat trainiert', points: 150, category: 'konstanz', repeat: 'season',
     check: (ctx, range) => {
       const days = [...activeDays(ctx)].filter((d) => d >= range.from && d <= range.to).sort();
       return { date: days[19] ?? null, progress: Math.min(1, days.length / 20), text: `${days.length} / 20 Tage` };
     } },
-  { key: 'trainingsziel_4_wochen', label: 'Wochenziel × 4', description: 'Vier Wochen in Folge so oft trainiert wie in deinen Zielen festgelegt', emoji: '🗓️', points: 100, category: 'ziele', repeat: 'season',
+  { key: 'trainingsziel_4_wochen', label: 'Wochenziel × 4', description: 'Vier Wochen in Folge so oft trainiert wie in deinen Zielen festgelegt', points: 100, category: 'ziele', repeat: 'season',
     check: (ctx, range) => {
       const target = Math.max(1, ctx.goals.trainingDays);
       const active = activeDays(ctx);
@@ -281,7 +280,7 @@ export const MEDALS: MedalDef[] = [
       }
       return { date: null, progress: Math.min(1, best / 4), text: `${Math.min(best, 4)} / 4 Wochen` };
     } },
-  { key: 'plan_woche', label: 'Plan erfüllt', description: 'Eine komplette Woche deines Trainingsplans umgesetzt', emoji: '✅', points: 100, category: 'ziele', repeat: 'season',
+  { key: 'plan_woche', label: 'Plan erfüllt', description: 'Eine komplette Woche deines Trainingsplans umgesetzt', points: 100, category: 'ziele', repeat: 'season',
     check: (ctx, range) => {
       const plan = ctx.plan;
       if (!plan || plan.sessions.length < 2) return { ...NOT, text: 'Trainingsplan hinterlegen' };
@@ -311,13 +310,13 @@ export const MEDALS: MedalDef[] = [
     } },
 
   // Ernährung, Schlaf, Körper
-  { key: 'protein_7', label: 'Protein-Profi', description: 'An 7 Tagen in Folge mindestens 95 % deines Proteinziels gegessen', emoji: '🥩', points: 75, category: 'ziele', repeat: 'season',
+  { key: 'protein_7', label: 'Protein-Profi', description: 'An 7 Tagen in Folge mindestens 95 % deines Proteinziels gegessen', points: 75, category: 'ziele', repeat: 'season',
     check: (ctx, range) => {
       const totals = dailyTotals(ctx.meals);
       const s = streak(rangeDays(range, ctx.today), (d) => (totals.get(d)?.protein ?? 0) >= ctx.goals.protein * 0.95, 7);
       return { date: s.date, progress: s.best / 7, text: `${s.best} / 7 Tage` };
     } },
-  { key: 'kalorien_14', label: 'Punktlandung', description: 'An 14 Tagen in einem Monat dein Kalorienziel (±10 %) getroffen', emoji: '🎯', points: 100, category: 'ziele', repeat: 'season',
+  { key: 'kalorien_14', label: 'Punktlandung', description: 'An 14 Tagen in einem Monat dein Kalorienziel (±10 %) getroffen', points: 100, category: 'ziele', repeat: 'season',
     check: (ctx, range) => {
       const totals = dailyTotals(ctx.meals);
       const hits = rangeDays(range, ctx.today).filter((d) => {
@@ -326,13 +325,13 @@ export const MEDALS: MedalDef[] = [
       });
       return { date: hits[13] ?? null, progress: Math.min(1, hits.length / 14), text: `${hits.length} / 14 Tage` };
     } },
-  { key: 'schlaf_7', label: 'Ausgeschlafen', description: '7 Nächte in Folge dein Schlafziel erreicht (max. 15 min darunter)', emoji: '😴', points: 75, category: 'ziele', repeat: 'season',
+  { key: 'schlaf_7', label: 'Ausgeschlafen', description: '7 Nächte in Folge dein Schlafziel erreicht (max. 15 min darunter)', points: 75, category: 'ziele', repeat: 'season',
     check: (ctx, range) => {
       const byDate = new Map(ctx.sleep.map((s) => [s.date, s.durationMin]));
       const s = streak(rangeDays(range, ctx.today), (d) => (byDate.get(d) ?? 0) >= ctx.goals.sleepHours * 60 - 15, 7);
       return { date: s.date, progress: s.best / 7, text: `${s.best} / 7 Nächte` };
     } },
-  { key: 'kraftziel', label: 'Kraftziel erreicht', description: 'Eines deiner Kraftziele (1RM) erreicht', emoji: '🎖️', points: 200, category: 'ziele', repeat: 'season',
+  { key: 'kraftziel', label: 'Kraftziel erreicht', description: 'Eines deiner Kraftziele (1RM) erreicht', points: 200, category: 'ziele', repeat: 'season',
     check: (ctx, range) => {
       if (!ctx.goals.strengthGoals.length) return { ...NOT, text: 'Kraftziel festlegen' };
       let best = 0;
@@ -346,7 +345,7 @@ export const MEDALS: MedalDef[] = [
       }
       return { date: null, progress: Math.min(1, best), text: `${Math.round(Math.min(1, best) * 100)} % des Ziels` };
     } },
-  { key: 'zielgewicht', label: 'Zielgewicht', description: 'Dein Zielgewicht erreicht (Ø 7 Tage)', emoji: '⚖️', points: 300, category: 'ziele', repeat: 'once',
+  { key: 'zielgewicht', label: 'Zielgewicht', description: 'Dein Zielgewicht erreicht (Ø 7 Tage)', points: 300, category: 'ziele', repeat: 'once',
     check: (ctx) => {
       const target = ctx.goals.targetWeight;
       const sorted = [...ctx.weights].sort((a, b) => a.date.localeCompare(b.date));

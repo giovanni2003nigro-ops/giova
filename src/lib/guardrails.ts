@@ -5,7 +5,7 @@ import { fmt, fmtSigned, round } from './stats';
 /**
  * Rahmenbedingungen: Grenzen, die IMMER gelten – egal was der Plan oder Wunsch ist.
  * Alles andere (Kalorien pro Tag, Makro-Verteilung, Mahlzeiten) passt sich an Plan und Alltag an.
- * Der KI-Coach darf diese Grenzen nicht unterschreiten, sondern erklärt die nächstbeste Variante.
+ * Der Coach darf diese Grenzen nicht unterschreiten, sondern erklärt die nächstbeste Variante.
  */
 
 export interface Limits {
@@ -42,7 +42,7 @@ export function limits(profile: Profile | null, weight: number | null, trains = 
   };
 }
 
-/** Setzt Ziele auf die Rahmenbedingungen (z. B. für den KI-Coach) und nennt jede Änderung. */
+/** Setzt Ziele auf die Rahmenbedingungen (z. B. für den Coach) und nennt jede Änderung. */
 export function enforceGoals(goals: Goals, lim: Limits): { goals: Goals; changes: string[] } {
   const g = { ...goals };
   const changes: string[] = [];

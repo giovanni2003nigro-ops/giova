@@ -100,7 +100,7 @@ export function LabelScanner({ onSaved }: { onSaved: (food: Food) => void }) {
 
       {!apiKey && (
         <div className="hint-box">
-          💡 Mit einem KI-Schlüssel (Claude API) werden die Nährwerte automatisch erkannt.{' '}
+          Mit einem KI-Schlüssel (Claude API) werden die Nährwerte automatisch erkannt.{' '}
           <a href="#/einstellungen" onClick={() => navigate('einstellungen')}>
             Jetzt einrichten
           </a>

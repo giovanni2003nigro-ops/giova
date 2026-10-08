@@ -44,6 +44,10 @@ export const COACH_PAGES: Partial<Record<RouteName, { label: string; suggestions
     label: 'Heute',
     suggestions: ['Wie war meine Woche? Was soll ich als Nächstes ändern?', 'Was esse ich heute noch, um meine Makros zu treffen?', 'Bin ich auf Kurs zu meinem Ziel?'],
   },
+  naehrstoffe: {
+    label: 'Nährstoffe',
+    suggestions: ['Was hat mir in den letzten Tagen gefehlt und wie gleiche ich das aus?', 'Mach mir ein Rezept mit viel Protein und Ballaststoffen aus meinen Lebensmitteln.', 'Welche Nährstoffe sind für mein Ziel am wichtigsten?'],
+  },
   essen: {
     label: 'Ernährung',
     suggestions: [
@@ -81,7 +85,7 @@ export const COACH_PAGES: Partial<Record<RouteName, { label: string; suggestions
   },
   profil: { label: 'Profil', suggestions: ['Fass meinen Monat zusammen.', 'Welche Medaille kann ich als Nächstes holen?'] },
   einstellungen: { label: 'Einstellungen', suggestions: ['Was kannst du alles für mich tun?'] },
-  coach: { label: 'KI-Coach', suggestions: SUGGESTIONS },
+  coach: { label: 'Coach', suggestions: SUGGESTIONS },
 };
 
 /** Markiert den Seiten-Kontext in Nachrichten – wird im Verlauf nicht angezeigt. */
@@ -95,7 +99,7 @@ export function CoachView() {
 export function CoachSheet({ route, question, onClose }: { route: Route; question?: string; onClose: () => void }) {
   return (
     <div className="sheet-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sheet coach-sheet" role="dialog" aria-modal="true" aria-label="KI-Coach">
+      <div className="sheet coach-sheet" role="dialog" aria-modal="true" aria-label="Coach">
         <div className="sheet-grip" />
         <CoachChat route={route} question={question} onClose={onClose} />
       </div>
@@ -137,9 +141,9 @@ function CoachChat({ route, question, onClose }: { route: Route; question?: stri
   if (!apiKey)
     return (
       <div className="content">
-        <Card title="KI-Coach einrichten">
+        <Card title="Coach einrichten">
           <p className="small text-2">
-            Dein persönlicher KI-Coach kennt deine Ziele, dein Training, deine Ernährung und deinen Schlaf, berechnet
+            Dein persönlicher Coach kennt deine Ziele, dein Training, deine Ernährung und deinen Schlaf, berechnet
             Nährwert-Kombinationen aus deiner Bibliothek und kann Mahlzeiten direkt eintragen.
           </p>
           <p className="small text-2">Dafür brauchst du einen API-Schlüssel von console.anthropic.com.</p>

@@ -6,7 +6,6 @@ export type PaceKind = 'min/km' | 'km/h' | 'min/100m' | 'min/500m';
 export interface SportDef {
   key: Sport;
   label: string;
-  emoji: string;
   /** Bezeichnung einer Einheit, z. B. „Lauf“ */
   noun: string;
   /** Live-Aufzeichnung per GPS sinnvoll */
@@ -19,17 +18,16 @@ export interface SportDef {
 }
 
 export const SPORT_DEFS: Record<Sport, SportDef> = {
-  laufen: { key: 'laufen', label: 'Laufen', emoji: '🏃', noun: 'Lauf', gps: true, distance: true, pace: 'min/km', met: 9.8 },
-  radfahren: { key: 'radfahren', label: 'Radfahren', emoji: '🚴', noun: 'Radfahrt', gps: true, distance: true, pace: 'km/h', met: 8 },
-  schwimmen: { key: 'schwimmen', label: 'Schwimmen', emoji: '🏊', noun: 'Schwimmeinheit', gps: false, distance: true, pace: 'min/100m', met: 7 },
-  wandern: { key: 'wandern', label: 'Wandern', emoji: '🥾', noun: 'Wanderung', gps: true, distance: true, pace: 'min/km', met: 6 },
-  rudern: { key: 'rudern', label: 'Rudern', emoji: '🚣', noun: 'Rudereinheit', gps: true, distance: true, pace: 'min/500m', met: 7 },
-  hyrox: { key: 'hyrox', label: 'Hyrox', emoji: '🔥', noun: 'Hyrox-Einheit', gps: false, distance: false, pace: null, met: 9 },
-  gym: { key: 'gym', label: 'Gym', emoji: '🏋️', noun: 'Krafttraining', gps: false, distance: false, pace: null, met: 5 },
-  powerlifting: { key: 'powerlifting', label: 'Powerlifting', emoji: '🏋️‍♂️', noun: 'Powerlifting-Einheit', gps: false, distance: false, pace: null, met: 6 },
+  laufen: { key: 'laufen', label: 'Laufen', noun: 'Lauf', gps: true, distance: true, pace: 'min/km', met: 9.8 },
+  radfahren: { key: 'radfahren', label: 'Radfahren', noun: 'Radfahrt', gps: true, distance: true, pace: 'km/h', met: 8 },
+  schwimmen: { key: 'schwimmen', label: 'Schwimmen', noun: 'Schwimmeinheit', gps: false, distance: true, pace: 'min/100m', met: 7 },
+  wandern: { key: 'wandern', label: 'Wandern', noun: 'Wanderung', gps: true, distance: true, pace: 'min/km', met: 6 },
+  rudern: { key: 'rudern', label: 'Rudern', noun: 'Rudereinheit', gps: true, distance: true, pace: 'min/500m', met: 7 },
+  hyrox: { key: 'hyrox', label: 'Hyrox', noun: 'Hyrox-Einheit', gps: false, distance: false, pace: null, met: 9 },
+  gym: { key: 'gym', label: 'Gym', noun: 'Krafttraining', gps: false, distance: false, pace: null, met: 5 },
+  powerlifting: { key: 'powerlifting', label: 'Powerlifting', noun: 'Powerlifting-Einheit', gps: false, distance: false, pace: null, met: 6 },
 };
 
-export const sportLabel = (s: Sport) => `${SPORT_DEFS[s].emoji} ${SPORT_DEFS[s].label}`;
 
 /** "MM:SS" bzw. "H:MM:SS" */
 export function formatClock(sec: number): string {

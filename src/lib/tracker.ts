@@ -24,6 +24,8 @@ export interface TrackerState {
   accuracy: number | null;
   /** Neuer Abschnitt beginnt mit dem nächsten Punkt */
   newSegment: boolean;
+  /** Zeit, in der die App im Hintergrund war (Handy gesperrt / andere App) – dort fehlt GPS */
+  backgroundMs?: number;
 }
 
 export interface GpsFix {
@@ -38,6 +40,8 @@ export interface GpsFix {
 export const MAX_ACCURACY = 35;
 /** Ohne Bewegung so lange → Auto-Pause (ms) */
 export const AUTO_PAUSE_MS = 12_000;
+/** Kam so lange kein Tick, war die App im Hintergrund (Browser hat sie angehalten) */
+export const BACKGROUND_GAP_MS = 15_000;
 
 /** Höchstgeschwindigkeit (m/s), darüber gilt ein Punkt als GPS-Sprung. */
 const MAX_SPEED: Record<Sport, number> = {
@@ -66,6 +70,7 @@ export function initialTracker(sport: Sport, autoPause = true): TrackerState {
     autoPause,
     accuracy: null,
     newSegment: true,
+    backgroundMs: 0,
   };
 }
 
@@ -99,6 +104,11 @@ export function trackerReducer(s: TrackerState, a: TrackerAction): TrackerState 
       if (s.status !== 'paused') return s;
       return { ...s, status: 'running', lastTick: a.now, lastMove: a.now, autoPaused: false, newSegment: true };
     case 'tick': {
+      // Zurück aus dem Hintergrund: Die Zeit lief weiter, nur GPS fehlte. Keine Auto-Pause auslösen –
+      // der nächste GPS-Punkt verbindet die Lücke (Luftlinie).
+      if (s.status === 'running' && !s.autoPaused && s.lastTick != null && a.now - s.lastTick > BACKGROUND_GAP_MS) {
+        return { ...accrue(s, a.now), lastMove: a.now, backgroundMs: (s.backgroundMs ?? 0) + (a.now - s.lastTick) };
+      }
       const next = accrue(s, a.now);
       if (next.status === 'running' && next.autoPause && !next.autoPaused && next.lastMove != null && a.now - next.lastMove > AUTO_PAUSE_MS) {
         // Die Stehzeit bis zur Erkennung wieder abziehen

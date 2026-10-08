@@ -11,6 +11,7 @@ import type { HyroxData, Sport, Visibility } from '../types';
 import { SPORTS, VISIBILITY_LABELS } from '../types';
 import { IconCamera, IconTrash } from './icons';
 import { NumField, Seg, toast } from './ui';
+import { SportIcon } from './SportIcon';
 
 export type ActivityDraft = NewActivity;
 
@@ -78,7 +79,7 @@ export function ActivityEditor({
         <div className="sport-grid" role="group" aria-label="Sportart">
           {SPORTS.map((s) => (
             <button key={s} type="button" className="sport-pick" aria-pressed={d.sport === s} onClick={() => set({ sport: s as Sport })}>
-              <span aria-hidden="true">{SPORT_DEFS[s].emoji}</span>
+              <SportIcon sport={s} />
               {SPORT_DEFS[s].label}
             </button>
           ))}

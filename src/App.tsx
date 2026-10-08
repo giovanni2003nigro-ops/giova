@@ -1,4 +1,5 @@
-import { useEffect, useState, type ComponentType, type SVGProps } from 'react';
+import { useEffect, useState, type ComponentType, type CSSProperties, type SVGProps } from 'react';
+import { setCommunityEnabled } from './lib/features';
 import { useMedalWatcher } from './activities';
 import { openCoach } from './coachBus';
 import { IconBack, IconGear, IconGrid, IconPlus, IconSparkle, IconTrophy, IconUser, IconUsers } from './components/icons';
@@ -6,6 +7,7 @@ import { NoticesButton } from './components/Notices';
 import { db, getKV } from './db';
 import { Toaster, toast } from './components/ui';
 import { navigate, useRoute, type RouteName } from './hooks';
+import { useCommunity } from './lib/features';
 import { formatClock } from './lib/sports';
 import { restoreDraft, useTracker } from './trackerStore';
 import { AccountView } from './views/Account';
@@ -21,6 +23,7 @@ import { LeaguesView } from './views/Leagues';
 import { MeView } from './views/Me';
 import { OnboardingView } from './views/Onboarding';
 import { MedalsView } from './views/Medals';
+import { NutrientsView } from './views/Nutrients';
 import { NutritionView } from './views/Nutrition';
 import { PlanView } from './views/Plan';
 import { PostView } from './views/Post';
@@ -51,6 +54,7 @@ const TITLES: Record<RouteName, string> = {
   entwicklung: 'Entwicklung',
   analyse: 'Analyse',
   start: 'Einrichtung',
+  naehrstoffe: 'Nährstoffe',
   feed: 'Feed',
   aufzeichnen: 'Aufzeichnen',
   ligen: 'Ligen',
@@ -61,7 +65,7 @@ const TITLES: Record<RouteName, string> = {
   import: 'Import',
   schlaf: 'Schlaf',
   ziele: 'Ziele & Körper',
-  coach: 'KI-Coach',
+  coach: 'Coach',
   einstellungen: 'Einstellungen',
   medaillen: 'Medaillen',
   plan: 'Plan & Alltag',
@@ -79,6 +83,7 @@ const PARENT: Partial<Record<RouteName, RouteName>> = {
   entwicklung: 'ich',
   analyse: 'ich',
   start: 'ich',
+  naehrstoffe: 'ich',
   training: 'ich',
   tracker: 'aufzeichnen',
   import: 'aufzeichnen',
@@ -97,7 +102,10 @@ const PARENT: Partial<Record<RouteName, RouteName>> = {
 export function App() {
   const route = useRoute();
   const tracker = useTracker();
-  const active = PARENT[route.name] ?? route.name;
+  const community = useCommunity();
+  const nav = NAV.filter((n) => community || (n.name !== 'feed' && n.name !== 'ligen'));
+  const social = route.name === 'feed' || route.name === 'ligen' || route.name === 'post' || route.name === 'athlet';
+  const active = !community && route.name === 'medaillen' ? 'profil' : (PARENT[route.name] ?? route.name);
   const isSub = !!PARENT[route.name];
   // Coach überall – außer Social Media (Feed, Beiträge, Profile) und Ranglisten
   const coachHere = route.name !== 'coach' && !!COACH_PAGES[route.name];
@@ -148,7 +156,7 @@ export function App() {
         <div className="row" style={{ gap: 0 }}>
           <NoticesButton page={route.name} />
           {coachHere && (
-            <button className="icon-btn coach-btn" onClick={() => openCoach()} aria-label="KI-Coach öffnen">
+            <button className="icon-btn coach-btn" onClick={() => openCoach()} aria-label="Coach öffnen">
               <IconSparkle />
             </button>
           )}
@@ -171,9 +179,11 @@ export function App() {
         {route.name === 'entwicklung' && <ProgressView />}
         {route.name === 'analyse' && <AnalysisView />}
         {route.name === 'start' && <OnboardingView />}
-        {route.name === 'feed' && <FeedView />}
+        {route.name === 'naehrstoffe' && <NutrientsView />}
+        {social && !community && <CommunityOff />}
+        {route.name === 'feed' && community && <FeedView />}
         {route.name === 'aufzeichnen' && <RecordView />}
-        {route.name === 'ligen' && <LeaguesView />}
+        {route.name === 'ligen' && community && <LeaguesView />}
         {route.name === 'essen' && <NutritionView />}
         {route.name === 'profil' && <ProfileView />}
         {route.name === 'training' && <TrainingView />}
@@ -187,12 +197,12 @@ export function App() {
         {route.name === 'plan' && <PlanView />}
         {route.name === 'konto' && <AccountView />}
         {route.name === 'aktivitaet' && <ActivityDetailView key={route.id} id={route.id} />}
-        {route.name === 'post' && <PostView key={route.id} id={route.id} />}
-        {route.name === 'athlet' && <AthleteView key={route.id} id={route.id} />}
+        {route.name === 'post' && community && <PostView key={route.id} id={route.id} />}
+        {route.name === 'athlet' && community && <AthleteView key={route.id} id={route.id} />}
       </main>
-      <nav className="nav" aria-label="Hauptnavigation" hidden={focus}>
+      <nav className="nav" aria-label="Hauptnavigation" hidden={focus} style={{ '--nav-cols': nav.length } as CSSProperties}>
         <div className="nav-inner">
-          {NAV.map(({ name, label, Icon, primary }) => (
+          {nav.map(({ name, label, Icon, primary }) => (
             <button key={name} className={primary ? 'primary' : ''} aria-current={active === name ? 'page' : undefined} onClick={() => navigate(name)}>
               <span className="nav-icon">
                 <Icon />
@@ -203,6 +213,33 @@ export function App() {
         </div>
       </nav>
       <Toaster />
+    </div>
+  );
+}
+
+/** Feed & Liga sind ausgeschaltet – kurzer Hinweis statt leerer Seite. */
+function CommunityOff() {
+  return (
+    <div className="content">
+      <div className="card">
+        <h2>Feed & Liga sind ausgeschaltet</h2>
+        <p className="small text-2">
+          Community, Ranglisten und Ligen sind gerade deaktiviert. Deine Aktivitäten, Punkte und Medaillen bleiben auf deinem Gerät. Einschalten kannst du sie jederzeit in den
+          Einstellungen.
+        </p>
+        <button
+          className="btn primary"
+          onClick={() => {
+            setCommunityEnabled(true);
+            toast('Feed & Liga eingeschaltet');
+          }}
+        >
+          Jetzt einschalten
+        </button>
+        <button className="btn" onClick={() => navigate('ich')}>
+          Zurück zu „Ich“
+        </button>
+      </div>
     </div>
   );
 }

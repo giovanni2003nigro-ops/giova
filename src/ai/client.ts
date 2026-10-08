@@ -27,7 +27,7 @@ export function errorMessage(err: unknown): string {
   if (err instanceof RefusalError) return err.message;
   if (err instanceof Anthropic.APIUserAbortError) return 'Abgebrochen.';
   if (err instanceof Anthropic.AuthenticationError)
-    return 'Der API-Schlüssel ist ungültig. Bitte prüfe ihn in den Einstellungen (⚙︎).';
+    return 'Der API-Schlüssel ist ungültig. Bitte prüfe ihn in den Einstellungen (Zahnrad oben rechts).';
   if (err instanceof Anthropic.PermissionDeniedError)
     return 'Kein Zugriff mit diesem API-Schlüssel (fehlende Berechtigung oder Guthaben).';
   if (err instanceof Anthropic.RateLimitError) return 'Zu viele Anfragen – bitte einen Moment warten und erneut versuchen.';

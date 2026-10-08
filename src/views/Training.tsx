@@ -129,8 +129,8 @@ function LogView({ date, setDate }: { date: string; setDate: (d: string) => void
     if (isPersonalRecord(set, previous)) {
       toast(
         w > 0
-          ? `🏆 Neuer Rekord: ${finalName} – geschätztes 1RM ${fmt(estimate1RM(w, reps), 1)} kg`
-          : `🏆 Neuer Rekord: ${finalName} – ${reps} Wiederholungen`,
+          ? `Neuer Rekord: ${finalName} – geschätztes 1RM ${fmt(estimate1RM(w, reps), 1)} kg`
+          : `Neuer Rekord: ${finalName} – ${reps} Wiederholungen`,
       );
     } else toast(`Satz gespeichert: ${fmt(w, 1)} kg × ${reps}`);
   };
@@ -257,7 +257,7 @@ function LogView({ date, setDate }: { date: string; setDate: (d: string) => void
                     <strong>{fmt(s.weight, 1)} kg</strong> × {s.reps}
                     {s.rpe ? <span className="muted small"> · RPE {s.rpe}</span> : null}
                     {prevBefore.length > 0 && s.weight > 0 && estimate1RM(s.weight, s.reps) > prevBest + 0.01 && (
-                      <span className="pr"> · 🏆 Rekord</span>
+                      <span className="pr"> · Rekord</span>
                     )}
                   </span>
                   <button className="icon-btn sm" onClick={() => s.id && db.sets.delete(s.id)} aria-label="Satz löschen">
@@ -293,7 +293,7 @@ function ShareSessionCard({ date, sets }: { date: string; sets: WorkoutSet[] }) 
       return;
     }
     const id = await saveActivity(await activityFromTraining(date, sport, durationSec, { visibility: visibility ?? shareDefault }));
-    toast('Als Aktivität gespeichert 🏋️');
+    toast('Als Aktivität gespeichert');
     navigate('aktivitaet', id);
   };
 
@@ -312,8 +312,8 @@ function ShareSessionCard({ date, sets }: { date: string; sets: WorkoutSet[] }) 
             value={sport}
             onChange={setSport}
             options={[
-              { value: 'gym', label: '🏋️ Gym' },
-              { value: 'powerlifting', label: '🏋️‍♂️ Powerlifting' },
+              { value: 'gym', label: 'Gym' },
+              { value: 'powerlifting', label: 'Powerlifting' },
             ]}
           />
           <Seg

@@ -1,6 +1,7 @@
 import type { ActivityCardData } from '../components/activity';
 import { activityStats } from '../components/activity';
 import { ACCENTS, FONTS_LARGE, readAppearance } from './appearance';
+import { SPORT_PATHS } from '../components/SportIcon';
 import { SPORT_DEFS } from './sports';
 
 /**
@@ -23,6 +24,19 @@ function gradient(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: num
   g.addColorStop(0.55, GRAD[1]);
   g.addColorStop(1, GRAD[2]);
   return g;
+}
+
+/** Zeichnet ein Linien-Icon (24er-Raster) in beliebiger Größe. */
+function drawSportIcon(ctx: CanvasRenderingContext2D, sport: ActivityCardData['sport'], x: number, y: number, size: number, stroke: string | CanvasGradient, width = 2) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(size / 24, size / 24);
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = width;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const d of SPORT_PATHS[sport]) ctx.stroke(new Path2D(d));
+  ctx.restore();
 }
 
 async function loadImage(blob: Blob): Promise<ImageBitmap> {
@@ -171,17 +185,15 @@ export async function renderStory(a: ActivityCardData, background: StoryBackgrou
   ctx.font = `600 38px ${BODY}`;
   ctx.fillStyle = 'rgba(255,255,255,0.8)';
   const when = new Date(a.startTime).toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
-  ctx.fillText(`${def.emoji} ${def.label} · ${when}`, pad, 250);
+  drawSportIcon(ctx, a.sport, pad, 216, 40, 'rgba(255,255,255,0.85)', 2.4);
+  ctx.fillText(`${def.label} · ${when}`, pad + 56, 250);
 
   // ---------- Strecke
   const hasRoute = !!a.route && a.route.length > 1;
   if (hasRoute) drawRoute(ctx, a.route!, { x: pad + 20, y: 360, w: W - 2 * pad - 40, h: 760 }, transparent);
   else if (background !== 'photo') {
-    // Ohne Strecke: großes Sport-Emoji als Blickfang
-    ctx.font = `360px ${BODY}`;
-    ctx.textAlign = 'center';
-    ctx.fillText(def.emoji, W / 2, 900);
-    ctx.textAlign = 'left';
+    // Ohne Strecke: großes Sport-Icon im Akzentverlauf als Blickfang
+    drawSportIcon(ctx, a.sport, W / 2 - 200, 520, 400, gradient(ctx, W / 2 - 200, 520, W / 2 + 200, 920), 1.6);
   }
 
   // ---------- Titel

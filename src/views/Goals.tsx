@@ -307,7 +307,7 @@ function GoalsForm({ initialGoals, initialProfile }: { initialGoals: Goals; init
             ) : undefined
           }
         >
-          <p className="tiny muted">Das MUSS immer gelten – alles andere passt sich an deine Pläne an. Auch der KI-Coach hält sich daran.</p>
+          <p className="tiny muted">Das MUSS immer gelten – alles andere passt sich an deine Pläne an. Auch der Coach hält sich daran.</p>
           <ul className="rules">
             {preview.rules.map((x) => (
               <li key={x.id} className={x.ok ? 'ok' : 'bad'}>

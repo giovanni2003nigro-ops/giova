@@ -9,6 +9,7 @@ import { fmt } from '../lib/stats';
 import type { Activity, HyroxData, PowerliftingData, Sport, StrengthSummary, Visibility } from '../types';
 import { IconComment, IconHeart, IconLock, IconUsers } from './icons';
 import { Avatar } from './people';
+import { SportIcon } from './SportIcon';
 
 export interface ActivityCardData {
   key: string;
@@ -165,7 +166,7 @@ export function ActivityCard({ a, onKudo }: { a: ActivityCardData; onKudo?: () =
     <article className="card activity-card">
       <a className="activity-link" href={a.href} aria-label={`${a.title} öffnen`} />
       <div className="row" style={{ gap: 10 }}>
-        {a.author ? <Avatar name={a.author.name} url={a.author.avatarUrl} size={40} /> : <span className="sport-dot" aria-hidden="true">{def.emoji}</span>}
+        {a.author ? <Avatar name={a.author.name} url={a.author.avatarUrl} size={40} /> : <span className="sport-dot" aria-hidden="true"><SportIcon sport={def.key} /></span>}
         <div className="grow">
           <div className="small">
             {a.author ? (
@@ -177,7 +178,7 @@ export function ActivityCard({ a, onKudo }: { a: ActivityCardData; onKudo?: () =
             )}
           </div>
           <div className="tiny muted">
-            {a.author && `${def.emoji} `}
+            {a.author && `$<SportIcon sport={def.key} /> `}
             {whenLabel(a.startTime)}
             {a.author?.region ? ` · ${a.author.region}` : ''} <VisibilityIcon v={a.visibility} />
             {a.shared && ' · geteilt'}

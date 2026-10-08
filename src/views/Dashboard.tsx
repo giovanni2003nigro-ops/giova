@@ -13,6 +13,7 @@ import { sumMacros } from '../lib/nutrition';
 import { fmt, fmtSigned } from '../lib/stats';
 import type { CoachReport } from '../types';
 import { GOAL_SHORT, INTENSITY_LABELS } from '../types';
+import { SportIcon } from '../components/SportIcon';
 
 /** „Heute“: Kalorien & Makros, Training des Tages, letzte Nacht und Gewicht. */
 export function DashboardView() {
@@ -59,7 +60,7 @@ export function DashboardView() {
           <div className="list">
             {needs.done.map((a) => (
               <a key={a.uid} className="list-item" href={`#/aktivitaet/${a.id}`}>
-                <span className="sport-dot" aria-hidden="true">{SPORT_DEFS[a.sport].emoji}</span>
+                <span className="sport-dot" aria-hidden="true"><SportIcon sport={a.sport} /></span>
                 <div className="main">
                   <div className="title">{a.title} ✓</div>
                   <div className="meta">+{fmt(a.points)} Punkte</div>
@@ -68,7 +69,7 @@ export function DashboardView() {
             ))}
             {needs.sessions.map((s) => (
               <div key={s.id} className="list-item">
-                <span className="sport-dot" aria-hidden="true">{SPORT_DEFS[s.sport].emoji}</span>
+                <span className="sport-dot" aria-hidden="true"><SportIcon sport={s.sport} /></span>
                 <div className="main">
                   <div className="title">{s.title}</div>
                   <div className="meta">
@@ -86,7 +87,7 @@ export function DashboardView() {
             ))}
           </div>
         ) : (
-          <p className="small text-2">Heute ist kein Training geplant – Ruhetag. 🧘</p>
+          <p className="small text-2">Heute ist kein Training geplant – Ruhetag.</p>
         )}
         {todaySets.length > 0 && (
           <p className="tiny muted">
@@ -155,7 +156,7 @@ export function CoachReportCard() {
       title={
         <div className="row">
           <IconSparkle width={20} height={20} />
-          <h2>KI-Coach-Analyse</h2>
+          <h2>Coach-Analyse</h2>
         </div>
       }
     >

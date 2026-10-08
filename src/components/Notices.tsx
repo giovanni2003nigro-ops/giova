@@ -11,6 +11,7 @@ const PAGE_AREAS: Partial<Record<RouteName, Area[] | 'all'>> = {
   einheiten: ['training'],
   entwicklung: ['gewicht', 'training'],
   essen: ['ernaehrung', 'gewicht'],
+  naehrstoffe: ['ernaehrung'],
   training: ['training'],
   aufzeichnen: ['training'],
   schlaf: ['schlaf'],

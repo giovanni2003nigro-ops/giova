@@ -64,10 +64,10 @@ export function Meter({
       </div>
       <div className="tiny muted">
         {over
-          ? `⚠ ${fmt(-rest, digits)}${unit} über Ziel`
+          ? `${fmt(-rest, digits)}${unit} über Ziel`
           : rest > 0
             ? `noch ${fmt(rest, digits)}${unit}`
-            : '✓ Ziel erreicht'}
+            : 'Ziel erreicht'}
       </div>
     </div>
   );

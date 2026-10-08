@@ -17,17 +17,16 @@ export interface Tier {
   index: number;
   key: string;
   label: string;
-  emoji: string;
   color: string;
 }
 
 export const TIERS: Tier[] = [
-  { index: 0, key: 'bronze', label: 'Bronze', emoji: '🥉', color: '#b0772f' },
-  { index: 1, key: 'silber', label: 'Silber', emoji: '🥈', color: '#8d949c' },
-  { index: 2, key: 'gold', label: 'Gold', emoji: '🥇', color: '#d4a017' },
-  { index: 3, key: 'platin', label: 'Platin', emoji: '💠', color: '#2b9fa8' },
-  { index: 4, key: 'diamant', label: 'Diamant', emoji: '💎', color: '#3d7be0' },
-  { index: 5, key: 'elite', label: 'Elite', emoji: '👑', color: '#8a4fd8' },
+  { index: 0, key: 'bronze', label: 'Bronze', color: '#b0772f' },
+  { index: 1, key: 'silber', label: 'Silber', color: '#8d949c' },
+  { index: 2, key: 'gold', label: 'Gold', color: '#d4a017' },
+  { index: 3, key: 'platin', label: 'Platin', color: '#2b9fa8' },
+  { index: 4, key: 'diamant', label: 'Diamant', color: '#3d7be0' },
+  { index: 5, key: 'elite', label: 'Elite', color: '#8a4fd8' },
 ];
 export const MAX_TIER = TIERS.length - 1;
 

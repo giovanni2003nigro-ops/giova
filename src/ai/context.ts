@@ -8,6 +8,7 @@ import { formatMetric, sessionsByExercise, TREND_LABELS } from '../lib/training'
 import { measuredTdee, resolveGoals } from '../lib/autoGoals';
 import { DEFAULT_SCHEDULE, dayNeeds, type NeedsInput } from '../lib/dailyNeeds';
 import { checkRules, limits } from '../lib/guardrails';
+import { nutrientCheck } from '../lib/nutrients';
 import { formatClock, formatDistance, formatPace, SPORT_DEFS } from '../lib/sports';
 import type {
   Activity,
@@ -82,6 +83,26 @@ export function describeRules(data: AppData): string {
   const lim = limits(data.profile, weight);
   const rules = checkRules(data.goals, data.plan, lim);
   return rules.map((r) => `- ${r.ok ? '✓' : '✗ VERLETZT'} ${r.label}: ${r.requirement} (aktuell ${r.current})${r.ok ? '' : ` → ${r.fix}`}`).join('\n');
+}
+
+/** Was in den letzten 7 Tagen gefehlt hat (Protein, Kohlenhydrate an Trainingstagen, Fett, Ballaststoffe, Zucker, Salz). */
+export function describeNutrients(data: AppData, today: ISODate): string {
+  const input = { ...needsInputOf(data, today), goals: data.goals };
+  const res = nutrientCheck({
+    meals: data.meals,
+    foods: data.foods,
+    goals: data.goals,
+    weight: input.weight,
+    targetFor: (d) => dayNeeds(d, input).targets,
+    trainingOn: (d) => {
+      const n = dayNeeds(d, input);
+      return n.sessions.length > 0 || n.done.length > 0;
+    },
+    from: addDays(today, -7),
+    to: addDays(today, -1),
+  });
+  if (!res.days) return 'Keine Essenseinträge in den letzten 7 Tagen.';
+  return [`${res.days} Tage erfasst:`, ...res.gaps.map((g) => `- ${g.label}: ${g.status} – ${g.detail}`)].join('\n');
 }
 
 export function runAnalysis(data: AppData, today: ISODate): AnalysisResult {
@@ -287,6 +308,7 @@ export function buildSnapshot(data: AppData, today: ISODate, analysis = runAnaly
     `## Training\n${describeTraining(data, today)}`,
     `## Aktivitäten (Laufen, Rad, Schwimmen, Hyrox …; letzte 4 Wochen)\n${describeActivities(data, today)}`,
     `## Trainingsplan, Alltag & Tagesbedarf\n${describePlanAndDay(data, today)}`,
+    `## Nährstoff-Check (letzte 7 Tage)\n${describeNutrients(data, today)}`,
     `## Schlaf (letzte 14 Nächte)\n${describeSleep(data, today)}`,
     `## Auswertung der App\n${describeAnalysis(analysis)}`,
     `## Lebensmittel-Bibliothek des Nutzers\n${describeFoodLibrary(data.foods)}`,

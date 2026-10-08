@@ -12,6 +12,7 @@ import { fmt } from '../lib/stats';
 import { DEFAULT_PREFS, useWeekNeeds } from '../needs';
 import type { DayKind, Intensity, NutritionPreferences, PlannedSession, ScheduleDay, Sport, TrainingPlan, WeekSchedule, Weekday } from '../types';
 import { DAY_KIND_LABELS, INTENSITY_LABELS, SPORTS, WEEKDAY_LABELS, WEEKDAY_SHORT } from '../types';
+import { SportIcon } from '../components/SportIcon';
 
 type Tab = 'woche' | 'training' | 'alltag' | 'vorlieben';
 
@@ -57,7 +58,8 @@ function WeekOverview() {
               <span className="bar" style={{ height: `${Math.round((d.targets.kcal / max) * 100)}%` }} />
               <span className="tiny tnum">{fmt(d.targets.kcal)}</span>
               <span className="tiny" aria-hidden="true">
-                {[...d.done.map((a) => SPORT_DEFS[a.sport].emoji), ...d.sessions.map((s) => SPORT_DEFS[s.sport].emoji)].join('') || '·'}
+                {[...d.done.map((a) => a.sport), ...d.sessions.map((s) => s.sport)].map((sp, j) => <SportIcon key={j} sport={sp} size={13} />)}
+                {!d.done.length && !d.sessions.length && '·'}
               </span>
             </a>
           ))}
@@ -209,7 +211,7 @@ function SessionRow({ s, onChange, onDelete }: { s: PlannedSession; onChange: (p
   return (
     <div className="session">
       <button className="session-head" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
-        <span aria-hidden="true">{SPORT_DEFS[s.sport].emoji}</span>
+        <SportIcon sport={s.sport} />
         <span className="grow">
           <span className="title">{s.title}</span>
           <span className="tiny muted">
@@ -227,7 +229,7 @@ function SessionRow({ s, onChange, onDelete }: { s: PlannedSession; onChange: (p
               <select className="input" value={s.sport} onChange={(e) => onChange({ sport: e.target.value as Sport })}>
                 {SPORTS.map((x) => (
                   <option key={x} value={x}>
-                    {SPORT_DEFS[x].emoji} {SPORT_DEFS[x].label}
+                    <SportIcon sport={x} /> {SPORT_DEFS[x].label}
                   </option>
                 ))}
               </select>

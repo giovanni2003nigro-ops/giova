@@ -9,6 +9,7 @@ import { fmt, fmtSigned } from '../lib/stats';
 import type { Sport } from '../types';
 import { WeightCard } from './Goals';
 import { TrendBadge } from './Training';
+import { SportIcon } from '../components/SportIcon';
 
 type Tab = 'gewicht' | 'kraft' | 'ausdauer';
 
@@ -121,12 +122,12 @@ function Endurance() {
         <div className="chips">
           {sports.map((s) => (
             <button key={s} className="chip" aria-pressed={s === sport} onClick={() => setPick(s)}>
-              {SPORT_DEFS[s].emoji} {SPORT_DEFS[s].label}
+              <SportIcon sport={s} /> {SPORT_DEFS[s].label}
             </button>
           ))}
         </div>
       )}
-      <Card title={`${def.emoji} Umfang pro Woche`}>
+      <Card title={`$<SportIcon sport={def.key} /> Umfang pro Woche`}>
         <div className="grid-2">
           <Stat tile label="Diese Woche" value={fmt(weeks[weeks.length - 1].km, 1)} unit="km" />
           <Stat tile label="Ø letzte 4 Wochen" value={fmt(avgKm, 1)} unit="km" />

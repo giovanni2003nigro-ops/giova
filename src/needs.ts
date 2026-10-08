@@ -2,6 +2,8 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db, getKV } from './db';
 import { measuredTdee, resolveGoals } from './lib/autoGoals';
 import { DEFAULT_SCHEDULE, dayNeeds, weekNeeds, type DayNeeds, type NeedsInput } from './lib/dailyNeeds';
+import { nutrientCheck, nutrientGuide } from './lib/nutrients';
+import { SPORT_DEFS } from './lib/sports';
 import { addDays, today as getToday } from './lib/dates';
 import type { Goals, NutritionPreferences, Profile, TrainingPlan, WeekSchedule } from './types';
 import { DEFAULT_GOALS } from './types';
@@ -64,4 +66,34 @@ export function useDayNeeds(date: string): (DayNeeds & { configured: boolean }) 
 
 export function useWeekNeeds(date: string): DayNeeds[] | undefined {
   return useLiveQuery(async () => weekNeeds(date, await loadNeedsInput()), [date]);
+}
+
+/** Nährstoff-Tipps fürs Ziel und Check der letzten 7 Tage (ohne heute, der ist noch nicht fertig). */
+export async function loadNutrients(ref = getToday()) {
+  const input = await loadNeedsInput(ref);
+  const from = addDays(ref, -7);
+  const to = addDays(ref, -1);
+  const [meals, foods] = await Promise.all([db.meals.where('date').between(from, to, true, true).toArray(), db.foods.toArray()]);
+  const sessions = input.plan?.sessions ?? [];
+  const trainingHours = sessions.reduce((s, x) => s + x.durationMin, 0) / 60;
+  const endurance = sessions.some((x) => SPORT_DEFS[x.sport].distance) || input.activities.some((a) => a.date >= addDays(ref, -28) && SPORT_DEFS[a.sport].distance);
+  const guide = nutrientGuide({ goals: input.goals, profile: input.profile, weight: input.weight, trainingHours, endurance, prefs: input.prefs, foods });
+  const check = nutrientCheck({
+    meals,
+    foods,
+    goals: input.goals,
+    weight: input.weight,
+    targetFor: (d) => dayNeeds(d, input).targets,
+    trainingOn: (d) => {
+      const n = dayNeeds(d, input);
+      return n.sessions.length > 0 || n.done.length > 0;
+    },
+    from,
+    to,
+  });
+  return { guide, check, goals: input.goals };
+}
+
+export function useNutrients() {
+  return useLiveQuery(() => loadNutrients(), []);
 }

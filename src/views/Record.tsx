@@ -11,6 +11,7 @@ import { SPORT_DEFS } from '../lib/sports';
 import { useTracker } from '../trackerStore';
 import type { Sport } from '../types';
 import { SPORTS } from '../types';
+import { SportIcon } from '../components/SportIcon';
 
 /** Startpunkt zum Aufzeichnen: Live-Tracker, Krafttraining, Import oder manuell. */
 export function RecordView() {
@@ -33,7 +34,7 @@ export function RecordView() {
         <div className="sport-grid">
           {gpsSports.map((s: Sport) => (
             <button key={s} className="sport-pick big" onClick={() => navigate('tracker', s)}>
-              <span aria-hidden="true">{SPORT_DEFS[s].emoji}</span>
+              <SportIcon sport={s} />
               {SPORT_DEFS[s].label}
             </button>
           ))}

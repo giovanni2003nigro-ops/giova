@@ -5,7 +5,7 @@ import { publishActivity, unpublishActivity, useMyProfile } from '../cloud/api';
 import { cloudEnabled, cloudError } from '../cloud/client';
 import { activityStats, fromLocal, whenLabel } from '../components/activity';
 import { ActivityEditor } from '../components/ActivityEditor';
-import { IconEdit, IconShare, IconTrash } from '../components/icons';
+import { IconEdit, IconShare, IconTrash, IconMedal } from '../components/icons';
 import { RouteMap } from '../components/RouteMap';
 import { StorySheet } from '../components/StorySheet';
 import { InfoBang } from '../components/InfoBang';
@@ -19,6 +19,8 @@ import { formatClock, formatDistance, formatDurationSec, SPORT_DEFS } from '../l
 import { fmt } from '../lib/stats';
 import type { Activity, Sport, Visibility } from '../types';
 import { VISIBILITY_LABELS } from '../types';
+import { SportIcon } from '../components/SportIcon';
+import { useCommunity } from '../lib/features';
 
 export function ActivityDetailView({ id }: { id?: string }) {
   const activity = useLiveQuery(() => (id ? db.activities.get(Number(id)) : undefined), [id]);
@@ -29,6 +31,7 @@ export function ActivityDetailView({ id }: { id?: string }) {
   const route = useMemo(() => activity?.track?.map((p) => [p.lat, p.lon] as [number, number]) ?? [], [activity?.track]);
   const splitRows = useMemo(() => (activity?.track && SPORT_DEFS[activity.sport].distance ? splits(activity.track, activity.sport === 'schwimmen' ? 100 : 1000) : []), [activity]);
   const [hover, setHover] = useState<number | null>(null);
+  const community = useCommunity();
 
   if (activity === undefined && id) return null;
   if (!activity) return <div className="content empty">Aktivität nicht gefunden.</div>;
@@ -48,7 +51,8 @@ export function ActivityDetailView({ id }: { id?: string }) {
     <div className="content">
       <div>
         <div className="small muted">
-          {def.emoji} {def.label} · {whenLabel(activity.startTime)} · {VISIBILITY_LABELS[activity.visibility]}
+          <SportIcon sport={def.key} /> {def.label} · {whenLabel(activity.startTime)}
+          {community && ` · ${VISIBILITY_LABELS[activity.visibility]}`}
         </div>
         <h1>{activity.title}</h1>
         {activity.note && <p className="text-2" style={{ marginTop: 6, whiteSpace: 'pre-wrap' }}>{activity.note}</p>}
@@ -64,7 +68,8 @@ export function ActivityDetailView({ id }: { id?: string }) {
         </div>
         <div className="hint-box row between">
           <span>
-            <strong>+{fmt(activity.points)} Punkte</strong> für Rangliste & Liga · {POINTS_RULES[activity.sport]}
+            <strong>+{fmt(activity.points)} Punkte</strong>
+            {community ? ' für Rangliste & Liga' : ''} · {POINTS_RULES[activity.sport]}
           </span>
           {activity.points === 0 && (
             <InfoBang title="Keine Punkte" tone="warn">
@@ -76,7 +81,7 @@ export function ActivityDetailView({ id }: { id?: string }) {
           <div className="chips">
             {related.map((m) => (
               <span key={m.id} className="badge">
-                {MEDAL_BY_KEY.get(m.key)?.emoji} {MEDAL_BY_KEY.get(m.key)?.label} +{m.points}
+                <IconMedal className="inline-icon" /> {MEDAL_BY_KEY.get(m.key)?.label} +{m.points}
               </span>
             ))}
           </div>
@@ -202,9 +207,10 @@ function SplitsCard({ sport, rows, onHover }: { sport: Sport; rows: Split[]; onH
 
 function ShareCard({ activity }: { activity: Activity }) {
   const { profile } = useMyProfile();
+  const community = useCommunity();
   const [busy, setBusy] = useState(false);
   const [visibility, setVisibility] = useState<Visibility>(activity.visibility === 'private' ? 'public' : activity.visibility);
-  if (!cloudEnabled) return null;
+  if (!cloudEnabled || !community) return null;
   if (!profile)
     return (
       <Card>
@@ -254,7 +260,7 @@ function ShareCard({ activity }: { activity: Activity }) {
           { value: 'private', label: 'Nur Liga' },
         ]}
       />
-      <button className="btn primary" disabled={busy} onClick={() => run(() => publishActivity(activity, visibility), 'Geteilt 🎉')}>
+      <button className="btn primary" disabled={busy} onClick={() => run(() => publishActivity(activity, visibility), 'Geteilt')}>
         <IconShare /> {visibility === 'private' ? 'Nur für die Liga hochladen' : 'Teilen'}
       </button>
     </Card>

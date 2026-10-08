@@ -13,7 +13,7 @@ import type { GoalType, Goals, NutritionPreferences, PlannedSession, TrainingPla
 import { DAY_KIND_LABELS, DEFAULT_GOALS, GOAL_LABELS, INTENSITY_LABELS, SPORTS, WEEKDAY_LABELS } from '../types';
 
 /**
- * Werkzeuge, mit denen der KI-Coach Daten in allen Bereichen der App ändern kann
+ * Werkzeuge, mit denen der Coach Daten in allen Bereichen der App ändern kann
  * (Ziele, Trainingsplan, Alltag, Aktivitäten, Kraftsätze, Schlaf, Gewicht, Ernährungsvorlieben).
  * Kein Zugriff auf Social Media, Feed, fremde Profile oder Ranglisten.
  * Die Rahmenbedingungen gelten immer: Ziele werden angepasst, Pläne mit Verstoß abgelehnt.
@@ -223,15 +223,15 @@ export const ACTION_TOOLS: BetaTool[] = [
 ];
 
 export const ACTION_LABELS: Record<string, string> = {
-  ziele_aendern: '🎯 Ziele geändert',
-  trainingsplan_aendern: '🗓️ Trainingsplan geändert',
-  alltag_aendern: '🏢 Alltag geändert',
-  aktivitaet_eintragen: '🏃 Aktivität eingetragen',
-  kraftsaetze_eintragen: '🏋️ Sätze eingetragen',
-  schlaf_eintragen: '🌙 Schlaf eingetragen',
-  gewicht_eintragen: '⚖️ Gewicht eingetragen',
-  vorlieben_aendern: '🥗 Vorlieben geändert',
-  seite_oeffnen: '↗️ Seite geöffnet',
+  ziele_aendern: 'Ziele geändert',
+  trainingsplan_aendern: 'Trainingsplan geändert',
+  alltag_aendern: 'Alltag geändert',
+  aktivitaet_eintragen: 'Aktivität eingetragen',
+  kraftsaetze_eintragen: 'Sätze eingetragen',
+  schlaf_eintragen: 'Schlaf eingetragen',
+  gewicht_eintragen: 'Gewicht eingetragen',
+  vorlieben_aendern: 'Vorlieben geändert',
+  seite_oeffnen: 'Seite geöffnet',
 };
 
 const sessionInput = z.object({

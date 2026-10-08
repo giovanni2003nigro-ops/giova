@@ -7,14 +7,14 @@ import type { Sport } from '../types';
 export const POST_CATEGORIES = ['rekord', 'technik', 'training', 'wettkampf', 'outfit', 'motivation', 'ernaehrung'] as const;
 export type PostCategory = (typeof POST_CATEGORIES)[number];
 
-export const CATEGORY_DEFS: Record<PostCategory, { label: string; emoji: string; hint: string }> = {
-  rekord: { label: 'Rekord', emoji: '🏆', hint: 'Bestzeit, neues Max, Uhr/Anzeige mit dem Ergebnis' },
-  technik: { label: 'Technik', emoji: '🎯', hint: 'So geht’s: Laufstil, Kniebeuge, Kraulzug …' },
-  training: { label: 'Training', emoji: '💪', hint: 'Einheit, Workout, Trainingsort' },
-  wettkampf: { label: 'Wettkampf', emoji: '🏁', hint: 'Rennen, Hyrox, Meet, Startnummer, Ziel' },
-  outfit: { label: 'Sportoutfit', emoji: '👟', hint: 'Laufschuhe, Trikot, Ausrüstung' },
-  motivation: { label: 'Motivation', emoji: '🔥', hint: 'Fortschritt, Vorher/Nachher im Sport' },
-  ernaehrung: { label: 'Sporternährung', emoji: '🥗', hint: 'Meal-Prep, Verpflegung im Wettkampf' },
+export const CATEGORY_DEFS: Record<PostCategory, { label: string; hint: string }> = {
+  rekord: { label: 'Rekord', hint: 'Bestzeit, neues Max, Uhr/Anzeige mit dem Ergebnis' },
+  technik: { label: 'Technik', hint: 'So geht’s: Laufstil, Kniebeuge, Kraulzug …' },
+  training: { label: 'Training', hint: 'Einheit, Workout, Trainingsort' },
+  wettkampf: { label: 'Wettkampf', hint: 'Rennen, Hyrox, Meet, Startnummer, Ziel' },
+  outfit: { label: 'Sportoutfit', hint: 'Laufschuhe, Trikot, Ausrüstung' },
+  motivation: { label: 'Motivation', hint: 'Fortschritt, Vorher/Nachher im Sport' },
+  ernaehrung: { label: 'Sporternährung', hint: 'Meal-Prep, Verpflegung im Wettkampf' },
 };
 
 export type PostStatus = 'pruefung' | 'sichtbar' | 'abgelehnt' | 'gesperrt';

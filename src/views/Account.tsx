@@ -25,6 +25,7 @@ import { compressImage } from '../lib/image';
 import { SPORT_DEFS } from '../lib/sports';
 import type { Profile, Sport, Visibility } from '../types';
 import { SPORTS, VISIBILITY_LABELS } from '../types';
+import { SportIcon } from '../components/SportIcon';
 
 export function AccountView() {
   const session = useSession();
@@ -239,7 +240,7 @@ function ProfileForm({ existing, email }: { existing: CloudProfile | null; email
         sports,
       });
       invalidateProfile(p);
-      toast(existing ? 'Profil gespeichert' : 'Willkommen in der Community! 🎉');
+      toast(existing ? 'Profil gespeichert' : 'Willkommen in der Community!');
       if (!existing) {
         const n = await shareAllPending().catch(() => 0);
         if (n) toast(`${n} Aktivitäten hochgeladen – sie zählen jetzt für deine Ligen`);
@@ -315,7 +316,7 @@ function ProfileForm({ existing, email }: { existing: CloudProfile | null; email
                 aria-pressed={sports.includes(s)}
                 onClick={() => setSports((xs) => (xs.includes(s) ? xs.filter((x) => x !== s) : [...xs, s]))}
               >
-                {SPORT_DEFS[s].emoji} {SPORT_DEFS[s].label}
+                <SportIcon sport={s} /> {SPORT_DEFS[s].label}
               </button>
             ))}
           </div>

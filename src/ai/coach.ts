@@ -10,7 +10,7 @@ const COACH_SYSTEM = `Du bist ein erfahrener Kraftsport-Coach und Ernährungsber
 2–3 Sätze: Wo steht der Nutzer in Bezug auf sein Ziel?
 
 ## Bewertung
-Je ein kurzer Absatz zu Training (Fortschritt der wichtigsten Übungen), Ernährung (Kalorien und Makros im Vergleich zum Ziel), Schlaf und Gewichtsverlauf – jeweils beginnend mit ✅ (im Ziel), ⚠️ (Abweichung) oder ❌ (deutliche Abweichung).
+Je ein kurzer Absatz zu Training (Fortschritt der wichtigsten Übungen), Ernährung (Kalorien und Makros im Vergleich zum Ziel), Schlaf und Gewichtsverlauf – jeweils beginnend mit **Im Ziel**, **Abweichung** oder **Deutliche Abweichung**. Keine Emojis.
 
 ## Was du ändern solltest
 Die 3–5 wichtigsten konkreten Änderungen, nach Wirkung sortiert und mit Zahlen (z. B. „+40 g Protein pro Tag“, „Kalorienziel auf 2.350 kcal senken“, „30 Minuten früher ins Bett“).

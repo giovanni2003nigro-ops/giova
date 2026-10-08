@@ -8,7 +8,6 @@ import { navigate, useApiKey } from '../hooks';
 import { mealTypeAt, type DayNeeds } from '../lib/dailyNeeds';
 import { today as getToday } from '../lib/dates';
 import { sumMacros } from '../lib/nutrition';
-import { SPORT_DEFS } from '../lib/sports';
 import { fmt, fmtSigned } from '../lib/stats';
 import { DEFAULT_PREFS } from '../needs';
 import type { MealEntry, NutritionPreferences, PlannedMeal } from '../types';
@@ -17,6 +16,7 @@ import { macroText } from './AddFoodSheet';
 import { IconCalendar, IconCheck, IconSparkle } from './icons';
 import { Markdown } from './Markdown';
 import { Card, ErrorBox, toast } from './ui';
+import { SportIcon } from './SportIcon';
 
 /** Tagesbedarf nach Training & Alltag + KI-Tagesplan mit Rezepten aus der eigenen Bibliothek. */
 export function DayPlanCard({ date, needs }: { date: string; needs: DayNeeds & { configured: boolean } }) {
@@ -111,12 +111,12 @@ export function DayPlanCard({ date, needs }: { date: string; needs: DayNeeds & {
       <div className="chips">
         {needs.done.map((a) => (
           <span key={a.uid} className="badge">
-            {SPORT_DEFS[a.sport].emoji} {a.title} ✓
+            <SportIcon sport={a.sport} /> {a.title} ✓
           </span>
         ))}
         {needs.sessions.map((s) => (
           <span key={s.id} className="badge">
-            {SPORT_DEFS[s.sport].emoji} {s.time ? `${s.time} ` : ''}
+            <SportIcon sport={s.sport} /> {s.time ? `${s.time} ` : ''}
             {s.title} · {INTENSITY_LABELS[s.intensity]}
           </span>
         ))}

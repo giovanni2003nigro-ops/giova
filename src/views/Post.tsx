@@ -9,6 +9,7 @@ import { StorySheet } from '../components/StorySheet';
 import { Card, ErrorBox, Stat, toast } from '../components/ui';
 import { SPORT_DEFS } from '../lib/sports';
 import { fmt } from '../lib/stats';
+import { SportIcon } from '../components/SportIcon';
 
 /** Aktivität aus der Community mit Kudos und Kommentaren. */
 export function PostView({ id }: { id?: string }) {
@@ -58,7 +59,7 @@ export function PostView({ id }: { id?: string }) {
         <div>
           <strong>{p.display_name}</strong>
           <div className="tiny muted">
-            {def.emoji} {def.label} · {whenLabel(card.startTime)}
+            <SportIcon sport={def.key} /> {def.label} · {whenLabel(card.startTime)}
             {p.region_name ? ` · ${p.region_name}` : ''}
           </div>
         </div>

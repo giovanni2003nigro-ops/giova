@@ -88,4 +88,33 @@ describe('Live-Tracker', () => {
     expect(laps).toHaveLength(1);
     expect(laps[0].durationSec).toBeCloseTo(125, 0);
   });
+
+  it('läuft weiter, wenn die App im Hintergrund war, und verbindet die Lücke', () => {
+    let s = trackerReducer(initialTracker('laufen'), { type: 'start', now: T0 });
+    s = run(s, [{ lat: 52.5, lon: 13.4, t: T0, accuracy: 5 }, ...move(0, T0, 60, 3)]);
+    expect(s.movingMs).toBe(60_000);
+    // 5 Minuten Bildschirm gesperrt: keine Ticks, kein GPS – danach erster Tick und erster Fix 900 m weiter
+    const back = T0 + 60_000 + 300_000;
+    s = trackerReducer(s, { type: 'tick', now: back });
+    expect(s.autoPaused).toBe(false);
+    expect(s.movingMs).toBe(360_000);
+    expect(s.backgroundMs).toBe(300_000);
+    s = trackerReducer(s, { type: 'fix', fix: { lat: 52.5 + (180 + 900) * STEP_LAT, lon: 13.4, t: back + 500, accuracy: 5 } });
+    expect(s.distanceM).toBeGreaterThan(1070);
+    expect(s.distanceM).toBeLessThan(1090);
+    // Danach ganz normal weiter, ohne Auto-Pause
+    s = run(s, move(1080, back + 500, 30, 3));
+    expect(s.autoPaused).toBe(false);
+    expect(s.distanceM).toBeGreaterThan(1160);
+  });
+
+  it('wer vor dem Sperren stand, bleibt in der Auto-Pause', () => {
+    let s = trackerReducer(initialTracker('laufen'), { type: 'start', now: T0 });
+    s = run(s, [{ lat: 52.5, lon: 13.4, t: T0, accuracy: 5 }, ...move(0, T0, 30, 3)]);
+    s = trackerReducer(s, { type: 'tick', now: T0 + 30_000 + AUTO_PAUSE_MS + 2000 });
+    expect(s.autoPaused).toBe(true);
+    const moving = s.movingMs;
+    s = trackerReducer(s, { type: 'tick', now: T0 + 600_000 });
+    expect(s.movingMs).toBe(moving);
+  });
 });

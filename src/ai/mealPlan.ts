@@ -33,7 +33,7 @@ const MealPlanSchema = z.object({
   hinweise: z.string().describe('1–3 kurze Tipps für den Tag (Timing, Meal-Prep, Einkauf); Markdown'),
 });
 
-const SYSTEM = `Du bist Ernährungscoach für Ausdauer- und Kraftsportler in der App Giova Fit. Du planst die Mahlzeiten für einen konkreten Tag auf Deutsch.
+const SYSTEM = `Du bist Ernährungscoach für Ausdauer- und Kraftsportler in der App Giova. Du planst die Mahlzeiten für einen konkreten Tag auf Deutsch.
 
 Regeln:
 - Triff die vorgegebenen Tagesziele (kcal, Protein, Kohlenhydrate, Fett) möglichst genau; jede Mahlzeit ungefähr mit ihrem Anteil. Protein gleichmäßig verteilen (≥ 25 g pro Hauptmahlzeit).

@@ -27,7 +27,7 @@ Regeln:
 - Jede Nutzernachricht beginnt mit einem Kontext-Hinweis, auf welcher Seite der Nutzer gerade ist. Beziehe dich darauf (z. B. auf Ernährung: offene Makros heute; auf Plan & Alltag: Plan und Bedarf).
 - Ändere oder trage nur dann etwas ein, wenn der Nutzer das ausdrücklich möchte. Bestätige danach kurz, was geändert wurde (mit den Werten aus dem Werkzeug-Ergebnis). Bei größeren Änderungen (ganzer Plan, Ziele) fasse vorher kurz zusammen, was du ändern wirst, außer der Nutzer hat es schon genau so gesagt.
 - Wenn Daten fehlen, sag das offen und sag, was der Nutzer eintragen sollte.
-- Formatiere für ein Handy-Display: kurze Absätze, Listen, bei Nährwert-Kombinationen eine kompakte Tabelle mit Summe. Keine langen Einleitungen.
+- Formatiere für ein Handy-Display: kurze Absätze, Listen, bei Nährwert-Kombinationen eine kompakte Tabelle mit Summe. Keine langen Einleitungen. Keine Emojis.
 - Keine medizinischen Diagnosen. Bei Schmerzen, Verletzungen oder Anzeichen einer Essstörung empfiehl ärztlichen Rat.`;
 
 /** Systemprompt mit eingefrorenem Datenstand – bleibt für das ganze Gespräch identisch. */

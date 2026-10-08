@@ -6,6 +6,7 @@ import { useApiKey } from '../hooks';
 import { deleteAllData, exportBackup, importBackup } from '../lib/backup';
 import { ACCENTS, FONTS_LARGE, FONTS_SMALL, readAppearance, saveAppearance, type Accent, type Appearance, type FontLarge, type FontSmall } from '../lib/appearance';
 import { today } from '../lib/dates';
+import { setCommunityEnabled, useCommunity } from '../lib/features';
 
 type Theme = 'system' | 'light' | 'dark';
 
@@ -142,6 +143,8 @@ export function SettingsView() {
         <AppearancePicker />
       </Card>
 
+      <CommunityCard />
+
       <Card title="Daten & Sicherung">
         <p className="small text-2">
           Alle Daten liegen nur auf diesem Gerät (im Browser). Erstelle regelmäßig eine Sicherung – z. B. um sie auf ein neues Handy zu übertragen.
@@ -161,7 +164,7 @@ export function SettingsView() {
       </Card>
 
       <p className="tiny muted" style={{ textAlign: 'center' }}>
-        Giova Fit · Kein Ersatz für ärztliche oder ernährungsmedizinische Beratung.
+        Giova · Kein Ersatz für ärztliche oder ernährungsmedizinische Beratung.
       </p>
     </div>
   );
@@ -222,5 +225,35 @@ function AppearancePicker() {
         <span className="small muted">Große Schrift für Werte & Titel, kleine graue für Details.</span>
       </div>
     </>
+  );
+}
+
+/** Feed & Liga ein-/ausschalten – aus: weg aus der Leiste, nichts wird hochgeladen. */
+function CommunityCard() {
+  const on = useCommunity();
+  return (
+    <Card title="Feed & Liga">
+      <label className="switch-row">
+        <span className="grow">
+          <strong>Community</strong>
+          <span className="tiny muted block-line">Feed, Beiträge, Ranglisten und Ligen</span>
+        </span>
+        <input
+          type="checkbox"
+          role="switch"
+          className="switch"
+          checked={on}
+          onChange={(e) => {
+            setCommunityEnabled(e.target.checked);
+            toast(e.target.checked ? 'Feed & Liga eingeschaltet' : 'Feed & Liga ausgeschaltet');
+          }}
+        />
+      </label>
+      <p className="tiny muted">
+        {on
+          ? 'Eingeschaltet: Feed und Liga stehen unten in der Leiste. Mit Konto werden Aktivitäten geteilt und zählen in deiner Liga.'
+          : 'Ausgeschaltet: Feed und Liga sind aus der Leiste verschwunden und es wird nichts hochgeladen. Aktivitäten, Punkte und Medaillen bleiben auf deinem Gerät.'}
+      </p>
+    </Card>
   );
 }

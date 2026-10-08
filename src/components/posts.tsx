@@ -41,6 +41,7 @@ import { whenLabel } from './activity';
 import { IconComment, IconHeart, IconImage, IconSend, IconTrash } from './icons';
 import { Avatar } from './people';
 import { ErrorBox, Sheet, toast } from './ui';
+import { SportIcon } from './SportIcon';
 
 // ------------------------------------------------------------------ Beitrag erstellen
 
@@ -139,7 +140,7 @@ export function PostComposer({ onClose, onPosted }: { onClose: () => void; onPos
         caption,
         verdict: v,
       });
-      toast(status === 'sichtbar' ? 'Beitrag veröffentlicht 🎉' : status === 'abgelehnt' ? 'Beitrag abgelehnt – kein Sportbezug erkannt' : 'Beitrag wird geprüft');
+      toast(status === 'sichtbar' ? 'Beitrag veröffentlicht' : status === 'abgelehnt' ? 'Beitrag abgelehnt – kein Sportbezug erkannt' : 'Beitrag wird geprüft');
       onPosted();
       onClose();
     } catch (err) {
@@ -182,7 +183,7 @@ export function PostComposer({ onClose, onPosted }: { onClose: () => void; onPos
         <div className="chips wrap">
           {POST_CATEGORIES.map((c) => (
             <button key={c} type="button" className="chip" aria-pressed={category === c} onClick={() => setCategory(c)} title={CATEGORY_DEFS[c].hint}>
-              {CATEGORY_DEFS[c].emoji} {CATEGORY_DEFS[c].label}
+              {CATEGORY_DEFS[c].label}
             </button>
           ))}
         </div>
@@ -194,14 +195,14 @@ export function PostComposer({ onClose, onPosted }: { onClose: () => void; onPos
           <option value="">–</option>
           {SPORTS.map((s) => (
             <option key={s} value={s}>
-              {SPORT_DEFS[s].emoji} {SPORT_DEFS[s].label}
+              <SportIcon sport={s} /> {SPORT_DEFS[s].label}
             </option>
           ))}
         </select>
       </label>
       <label className="field">
         <span>Text</span>
-        <textarea className="input" rows={3} maxLength={MAX_CAPTION} value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="z. B. Neue 5-km-Bestzeit: 19:42 🔥" />
+        <textarea className="input" rows={3} maxLength={MAX_CAPTION} value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="z. B. Neue 5-km-Bestzeit: 19:42" />
       </label>
 
       {verdict && !verdictOk(verdict) && (
@@ -256,11 +257,16 @@ export function PostCard({ post, onChange, onRemove }: { post: PostRow; onChange
           </a>
           <div className="tiny muted">
             {whenLabel(Date.parse(post.created_at))}
-            {post.sport ? ` · ${SPORT_DEFS[post.sport].emoji} ${SPORT_DEFS[post.sport].label}` : ''}
+            {post.sport && (
+              <>
+                {' · '}
+                <SportIcon sport={post.sport} size={13} /> {SPORT_DEFS[post.sport].label}
+              </>
+            )}
           </div>
         </div>
         <span className="badge">
-          {cat.emoji} {cat.label}
+          {cat.label}
         </span>
         <button className="icon-btn sm" onClick={() => setMenu(true)} aria-label="Mehr">
           ⋯

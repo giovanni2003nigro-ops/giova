@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import type { ReactNode } from 'react';
 import { openCoach } from '../coachBus';
 import { IconCalendar, IconDumbbell, IconFood, IconHome, IconMoon, IconPulse, IconSparkle, IconTarget, IconTrend } from '../components/icons';
+import { SportIcon } from '../components/SportIcon';
 import { db, useKV } from '../db';
 import { useAnalysis, useAppData, useToday } from '../hooks';
 import { movingAverage } from '../lib/body';
@@ -9,7 +10,7 @@ import { addDays, formatDateLong, formatDuration, weekStart } from '../lib/dates
 import { sumMacros } from '../lib/nutrition';
 import { SPORT_DEFS } from '../lib/sports';
 import { fmt, fmtSigned } from '../lib/stats';
-import { useDayNeeds, useWeekNeeds } from '../needs';
+import { useDayNeeds, useNutrients, useWeekNeeds } from '../needs';
 import { GOAL_SHORT, WEEKDAY_SHORT } from '../types';
 
 /**
@@ -22,6 +23,7 @@ export function MeView() {
   const analysis = useAnalysis(data);
   const needs = useDayNeeds(t);
   const week = useWeekNeeds(t);
+  const nutrients = useNutrients();
   const onboarded = useKV<boolean>('onboarded', false);
   const meals = useLiveQuery(() => db.meals.where('date').equals(t).toArray(), [t]);
   const weekActs = useLiveQuery(() => db.activities.where('date').aboveOrEqual(weekStart(t)).toArray(), [t]);
@@ -31,7 +33,7 @@ export function MeView() {
   const target = needs.targets;
   const left = Math.round(target.kcal - eaten.kcal);
   const lastNight = data.sleep.find((s) => s.date === t);
-  const today = [...needs.done.map((a) => ({ key: a.uid, emoji: SPORT_DEFS[a.sport].emoji, text: a.title, done: true })), ...needs.sessions.map((s) => ({ key: s.id, emoji: SPORT_DEFS[s.sport].emoji, text: `${s.time ? `${s.time} ` : ''}${s.title}`, done: false }))];
+  const today = [...needs.done.map((a) => ({ key: a.uid, sport: a.sport, text: a.title, done: true })), ...needs.sessions.map((s) => ({ key: s.id, sport: s.sport, text: `${s.time ? `${s.time} ` : ''}${s.title}`, done: false }))];
   const plannedWeek = week.filter((d) => d.sessions.length || d.done.length).length;
   const doneWeek = week.filter((d) => d.done.length).length;
   const km = weekActs.reduce((s, a) => s + (SPORT_DEFS[a.sport].distance ? (a.distanceM ?? 0) / 1000 : 0), 0);
@@ -40,6 +42,7 @@ export function MeView() {
   const rising = analysis.trends.filter((x) => x.status === 'fortschritt' || x.status === 'starker-fortschritt').length;
   const problems = analysis.recommendations.filter((r) => r.severity === 'warn' || r.severity === 'alert').length;
   const score = analysis.score.total;
+  const missing = (nutrients?.check.gaps ?? []).filter((g) => g.status === 'zu-wenig' && g.key !== 'kcal').map((g) => g.label.replace(' an Trainingstagen', '')).slice(0, 2);
 
   return (
     <div className="content me">
@@ -68,7 +71,16 @@ export function MeView() {
             </div>
           </div>
           <ul className="tile-list">
-            {today.length ? today.slice(0, 2).map((x) => <li key={x.key}>{x.emoji} {x.text}{x.done ? ' ✓' : ''}</li>) : <li>Ruhetag</li>}
+            {today.length ? (
+              today.slice(0, 2).map((x) => (
+                <li key={x.key}>
+                  <SportIcon sport={x.sport} size={13} /> {x.text}
+                  {x.done ? ' ✓' : ''}
+                </li>
+              ))
+            ) : (
+              <li>Ruhetag</li>
+            )}
           </ul>
         </Tile>
 
@@ -76,7 +88,7 @@ export function MeView() {
           <MacroBar label="P" value={eaten.protein} target={target.protein} />
           <MacroBar label="KH" value={eaten.carbs} target={target.carbs} />
           <MacroBar label="F" value={eaten.fat} target={target.fat} />
-          <span className="tiny muted">Tracker · Bedarf · Rezepte</span>
+          <span className="tiny muted">{missing.length ? `Zuletzt zu wenig: ${missing.join(', ')}` : 'Tracker · Bedarf · Rezepte · Nährstoffe'}</span>
         </Tile>
 
         <Tile href="#/einheiten" icon={<IconDumbbell />} title="Training">
@@ -97,9 +109,9 @@ export function MeView() {
         <Tile href="#/entwicklung" icon={<IconTrend />} title="Entwicklung">
           {spark.length > 1 ? <Sparkline values={spark.map((p) => p.value)} /> : <span className="tiny muted">Gewicht eintragen für den Verlauf</span>}
           <ul className="tile-list">
-            {trend && <li>⚖️ {fmt(trend.avg7, 1)} kg{trend.ratePerWeek != null ? ` (${fmtSigned(trend.ratePerWeek, 2)}/Wo.)` : ''}</li>}
-            <li>💪 {rising ? `${rising} Übung${rising > 1 ? 'en' : ''} steigen` : 'Kraft'}</li>
-            <li>🏃 {fmt(km, 1)} km diese Woche</li>
+            {trend && <li>Gewicht {fmt(trend.avg7, 1)} kg{trend.ratePerWeek != null ? ` (${fmtSigned(trend.ratePerWeek, 2)}/Wo.)` : ''}</li>}
+            <li>Kraft: {rising ? `${rising} Übung${rising > 1 ? 'en' : ''} steigen` : 'stabil'}</li>
+            <li>Ausdauer: {fmt(km, 1)} km diese Woche</li>
           </ul>
         </Tile>
 
@@ -111,7 +123,7 @@ export function MeView() {
 
         <button className="tile tile-coach" onClick={() => openCoach()}>
           <span className="tile-head">
-            <IconSparkle /> KI-Coach
+            <IconSparkle /> Coach
           </span>
           <span className="small">Frag mich alles – Training, Essen, Schlaf, Pläne.</span>
           <span className="chip">„Was esse ich heute noch?“</span>
